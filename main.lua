@@ -16,7 +16,8 @@ love.filesystem.load("mapgrid.lua")()
 function love.load()
 	love.window.setMode(love.graphics.getWidth(), love.graphics.getHeight(),
 		{resizable=true, msaa=4})
-	
+	love.profiler = require('profile') 
+	--love.profiler.start()
 
 	generateHeightmap()
 	generateMasks()
@@ -52,8 +53,11 @@ function love.load()
 	decalShader:send("zscale", mapGridScale/2)
 	spriteShadowShader = love.graphics.newShader("sprite_object_shadow.glsl")
 	spriteShadowShader:send("cameraRot", camera.rot)
+	spritestackToSpriteShader = love.graphics.newShader("spritestack_to_sprite.glsl")
+	spritestackToSpriteShader:send("cameraRot", camera.rot)
 	initializeBuffers()
-	generateRandomTrees(3000)
+	generateRandomTrees(30000)
+	
 end
 
 function loadSpriteStack(filename, image)
@@ -89,6 +93,40 @@ function loadSpriteStack(filename, image)
 	local spritestack = love.graphics.newMesh(vertices, "triangles", "static")
 	spritestack:setTexture(image)
 	return spritestack
+end
+function prerenderSpritestack(mesh, normalmap, Nangles, Nmoisture, canvas, normalCanvas)
+	
+	local maxRadiusSquared = 0
+	local maxHeight = 0
+	for i = 1, mesh:getVertexCount( ) do
+		local x, y, u, v, r = mesh:getVertex(i)
+		local rSquared = x*x + y*y
+		maxRadiusSquared = math.max(maxRadiusSquared, rSquared)
+		maxHeight = math.max(maxHeight, r)
+	end
+	local maxRadius = math.sqrt(maxRadiusSquared)
+	if not canvas or not normalCanvas then
+		canvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
+		normalCanvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
+	end
+	love.graphics.setShader(spritestackToSpriteShader)
+	spritestackToSpriteShader:send("normalMap", normalmap)
+	love.graphics.setColor(1,1,1,1)
+	love.graphics.setCanvas(canvas)
+	love.graphics.clear()
+	love.graphics.setCanvas(normalCanvas)
+	love.graphics.clear()
+	for i = 1, Nangles do
+		for j = 1, Nmoisture do
+			love.graphics.setCanvas({canvas, normalCanvas})
+			spritestackToSpriteShader:send("objectRot", (i-1) * math.pi*2 / Nangles - camera.rot)
+			spritestackToSpriteShader:send("humidity", math.pow(j/Nmoisture, 2))
+			local x, y = maxRadius + 2* maxRadius * i, j*(maxHeight*256 + maxRadius) - maxRadius/2
+			love.graphics.draw(mesh, x, y) --draw sprite
+		end
+	end
+	love.graphics.setCanvas()
+	return canvas, normalCanvas
 end
 
 -- debug function for displaying contents of anything as text
@@ -219,6 +257,7 @@ function initializeBuffers()
 	objectShadows = love.graphics.newCanvas(gridSizeX, gridSizeY, {format="r8"})
 	terrainGeomShader:send("objectShadows", objectShadows)
 	--screenGrid:setTexture(sandTex)
+	birchSpritesheet, birchSpritesheetNor = prerenderSpritestack(voxelbirch, birch1_nor, 8, 4)
 end
 function updateBuffers()
 	-- buffers operate directly on global canvases to avoid reassigning them on the gpu
@@ -307,13 +346,14 @@ function generateRandomTrees(n)
 		local x = math.random() * mapSizeX
 		local y = math.random() * mapSizeY
 		local rot = math.random() * 2 * math.pi
-		if i % 3 == 0 then
+		--[[ if i % 3 == 0 then
 			addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
 		elseif i % 3 == 1 then
 			addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
 		else
 			addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
-		end
+		end ]]
+		addUnit(peasant_worker, x, y, rot)
 	end
 end
 
@@ -327,7 +367,7 @@ function recalculateHeights(x1, y1, x2, y2)
 	end
 end
 
-
+love.frame = 0
 function love.update(dt)
 	cameraspeed = 50 -- map texels per second
 	if love.keyboard.isDown('s') then
@@ -365,6 +405,11 @@ function love.update(dt)
 	updateFluid(fluidSim)
 	calculateTerrainMasks(bufferScale)
 	updatePlants(dt)
+	love.frame = love.frame + 1
+	--[[ if love.frame%100 == 0 then
+		love.report = love.profiler.report(20)
+		love.profiler.reset()
+	end ]]
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
@@ -412,6 +457,7 @@ function love.wheelmoved(x, y)
 	spritestackShadowShader:send("cameraRot", camera.rot)
 	spriteShadowShader:send("cameraRot", camera.rot)
 	decalShader:send("rot", camera.rot)
+	prerenderSpritestack(voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
 end
 
 function love.keypressed(key, u)
@@ -606,6 +652,8 @@ function love.draw()
 	love.graphics.draw(fluidSim.tmpBuffer, 0, 0, 0, 1/fluidSim.tmpBuffer:getWidth()*minimapSize)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
+	love.graphics.draw(birchSpritesheet, 0, 256)
+	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)
 	local z2 = getTerrainHeight(cursorX+0.5, cursorY-0.5) 

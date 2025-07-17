@@ -53,7 +53,7 @@ end
 
 function addPlant(plant, x, y, rot, walkable, blockerList)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {object = plant, objectType = "plant", x=x, y=y, rot=rot, drowning = 0}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {object = plant, objectType = "plant", x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
     if walkable then
         mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
     else
@@ -77,13 +77,28 @@ function addBuilding(building, x, y, rot, walkable)
 end
 
 function updatePlants (dt)
+    local Nframes = 20 --distribute updates over N frames to reduce load
+    local n = love.frame%Nframes
+    local index = 0;
     for k, v in pairs(mapGrid) do
         if v.object and v.object.objectType == "plant" then
-            v.object.drowning = math.max(0, v.object.drowning + getFluidDepth(fluidSim, v.object.x, v.object.y)*255-0.1)
-            if v.object.drowning >= 256 then
-                v.object = nil
-                v.blocker = nil
+            index = (index+1)%Nframes
+            if index == n then
+                v.object.drowning = math.max(0, v.object.drowning + (getFluidDepth(fluidSim, v.object.x, v.object.y)*255-0.1)*Nframes)
+                if v.object.drowning >= 256 then
+                    v.object = nil
+                    v.blocker = nil
+                end
             end
         end
+    end
+end
+
+function clearObject(x, y)
+    if getObject(x, y) then
+        for k, v in pairs(getObject(x, y).blockerList) do
+            mapGrid[x+v[1]+(y+v[2])*mapSizeX].blocker = nil
+        end
+        mapGrid[x+y*mapSizeX].object = nil
     end
 end

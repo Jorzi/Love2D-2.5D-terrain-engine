@@ -97,7 +97,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 	float phaseOffset = snoise(pos.xy * worldSize/25) * 6;
 	float wave = ((sin(8*waterEdge + 4*time + phaseOffset))*0.5 + 0.5)*clamp(waterEdge - 0.4, 0, 1);
 	//vec4 waterColor = mix(vec4(100* water.g + 0.5, 100* water.b + 0.5, 1, 1), vec4(1, 1, 1, 1), wave); //debug colors
-  float waterVelocity = clamp(70*length(water.gb), 0, 1);
+  float waterVelocity = clamp(80*length(water.gb), 0, 1);
 	vec4 waterColor = mix(mix(vec4(0.4 , 0.5, 0.9, 1), vec4(1, 1, 1, 1), waterVelocity), vec4(1, 1, 1, 1), wave);
 
 	texturecolor = mix(texturecolor, Texel(grassTex, pos.xy * worldSize/20), clamp(clamp(2* water.a, 0, 1) - 30*(pos.z-waterLevel), 0, 1) );

@@ -26,15 +26,15 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
 void effect()
 {
 	vec4 texturecolor = Texel(MainTex, VaryingTexCoord.xy);
-    vec4 normal = Texel(normalMap, VaryingTexCoord.xy);
+    vec3 normal = 2*Texel(normalMap, VaryingTexCoord.xy).rgb - 1;
 	//dry up leaves
 	if(texturecolor.a < 1){
 		texturecolor.a = 0.01 + sqrt(rand(VaryingTexCoord.xy)) > (1-humidity) ? texturecolor.a : 0;
 		texturecolor.rgb = mix(texturecolor.rgb, vec3(0.6, 0.5, 0.2), 1-humidity);
 	}
-    normal.a = texturecolor.a;
+    normal = vec3(normal.x * cos(objectRot) - normal.y * sin(objectRot), normal.x * sin(objectRot) + normal.y * cos(objectRot), normal.z);
 
     love_Canvases[0] = texturecolor;
-    love_Canvases[1] = normal;
+    love_Canvases[1] = vec4((0.5*normal+0.5), texturecolor.a);
 }
 #endif

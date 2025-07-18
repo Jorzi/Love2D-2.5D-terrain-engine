@@ -56,7 +56,7 @@ function love.load()
 	spritestackToSpriteShader = love.graphics.newShader("spritestack_to_sprite.glsl")
 	spritestackToSpriteShader:send("cameraRot", camera.rot)
 	initializeBuffers()
-	generateRandomTrees(30000)
+	generateRandomTrees(10000)
 	
 end
 
@@ -109,8 +109,29 @@ function prerenderSpritestack(mesh, normalmap, Nangles, Nmoisture, canvas, norma
 		canvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
 		normalCanvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
 	end
+	local SpriteObject = {}
+    SpriteObject.normalmap = normalCanvas
+	-- centered vertex coordinates (origin at bottom center of bounding cylinder)
+	local x1 = -maxRadius
+	local x2 = maxRadius
+	local y1 = -maxHeight-maxRadius/2
+	local y2 = maxRadius/2
+	-- normalized texture coordinates 
+	local u1 = 0
+	local u2 = 1/Nangles
+	local v1 = 0
+	local v2 = 1/Nmoisture
+	local vertices = {}
+	table.insert(vertices, {x1, y1, u1, v1, 1,1,1})
+	table.insert(vertices, {x2, y1, u2, v1, 1,1,1})
+	table.insert(vertices, {x2, y2, u2, v2, 1,1,1})
+	table.insert(vertices, {x1, y2, u1, v2, 1,1,1})
+	SpriteObject.sprite = love.graphics.newMesh(vertices)
+	SpriteObject.sprite:setTexture(canvas)
+
 	love.graphics.setShader(spritestackToSpriteShader)
 	spritestackToSpriteShader:send("normalMap", normalmap)
+	spritestackToSpriteShader:send("cameraRot", camera.rot)
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.setCanvas(canvas)
 	love.graphics.clear()
@@ -119,7 +140,7 @@ function prerenderSpritestack(mesh, normalmap, Nangles, Nmoisture, canvas, norma
 	for i = 1, Nangles do
 		for j = 1, Nmoisture do
 			love.graphics.setCanvas({canvas, normalCanvas})
-			spritestackToSpriteShader:send("objectRot", (i-1) * math.pi*2 / Nangles - camera.rot)
+			spritestackToSpriteShader:send("objectRot", (i-1) * math.pi*2 / Nangles)
 			spritestackToSpriteShader:send("humidity", math.pow(j/Nmoisture, 2))
 			local x, y = maxRadius + 2* maxRadius * i, j*(maxHeight*256 + maxRadius) - maxRadius/2
 			love.graphics.draw(mesh, x, y) --draw sprite
@@ -346,14 +367,14 @@ function generateRandomTrees(n)
 		local x = math.random() * mapSizeX
 		local y = math.random() * mapSizeY
 		local rot = math.random() * 2 * math.pi
-		--[[ if i % 3 == 0 then
+		if i % 3 == 0 then
 			addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
 		elseif i % 3 == 1 then
 			addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
 		else
 			addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
-		end ]]
-		addUnit(peasant_worker, x, y, rot)
+		end
+		--addUnit(peasant_worker, x, y, rot)
 	end
 end
 
@@ -652,7 +673,7 @@ function love.draw()
 	love.graphics.draw(fluidSim.tmpBuffer, 0, 0, 0, 1/fluidSim.tmpBuffer:getWidth()*minimapSize)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	love.graphics.draw(birchSpritesheet, 0, 256)
+	love.graphics.draw(birchSpritesheetNor, 0, 256)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)

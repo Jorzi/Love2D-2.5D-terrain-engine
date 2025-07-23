@@ -33,8 +33,10 @@ void effect()
 		texturecolor.rgb = mix(texturecolor.rgb, vec3(0.6, 0.5, 0.2), 1-humidity);
 	}
     normal = vec3(normal.x * cos(objectRot) - normal.y * sin(objectRot), normal.x * sin(objectRot) + normal.y * cos(objectRot), normal.z);
+    vec3 lightDir = normalize(vec3(1,1,1));
+    float lightFactor = clamp(dot(lightDir, normal), 0, 1);
 
     love_Canvases[0] = texturecolor;
-    love_Canvases[1] = vec4((0.5*normal+0.5), texturecolor.a);
+    love_Canvases[1] = vec4(lightFactor, VaryingColor.r, 0, texturecolor.a);
 }
 #endif

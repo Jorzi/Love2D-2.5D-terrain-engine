@@ -42,7 +42,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 
 	vec3 lightDir = normalize(vec3(1,1,1));
 	lightDir = vec3(lightDir.x * cos(objectRot) - lightDir.y * sin(objectRot), lightDir.x * sin(objectRot) + lightDir.y * cos(objectRot), lightDir.z);
-	float lightFactor = clamp(0.8 * dot(lightDir, nor)+0.2, 0, 1);
+	float lightFactor = clamp(dot(lightDir, nor), 0, 1);
 	lightFactor *= (1 - clamp((shadowHeight - height + 0.001)*80, 0, 1));
 	lightFactor = 0.7 * lightFactor + 0.3;
     return vec4(texturecolor.rgb * lightFactor, texturecolor.a);

@@ -180,12 +180,12 @@ function placeSoil(x1, y1, x2, y2)
 
 	for i = x, x + width do
 		for j = y, y + height do
-			local rot = math.random() * 360
+			local rot = math.random() * 2*math.pi
 			local chunkX = math.ceil(i/chunkSize)
 			local chunkY = math.ceil(j/chunkSize)
-			local varX = math.random() * 0.4 - 0.2
-			local varY = math.random() * 0.4 - 0.2
-			addPlant({image=voxelcorn, height=getTerrainHeight(i, j), normalmap=corn1_nor}, i+varX, j+varY, rot, true)
+			local varX = math.random() * 0.2 - 0.1
+			local varY = math.random() * 0.2 - 0.1
+			addPlant({image=cornSprite, height=getTerrainHeight(i, j), normalmap=cornSpritesheetNor}, i+varX, j+varY, rot, true)
 		end
 	end
 

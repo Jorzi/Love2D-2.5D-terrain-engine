@@ -55,8 +55,12 @@ function love.load()
 	spriteShadowShader:send("cameraRot", camera.rot)
 	spritestackToSpriteShader = love.graphics.newShader("spritestack_to_sprite.glsl")
 	spritestackToSpriteShader:send("cameraRot", camera.rot)
+	dynamicSpriteShader = love.graphics.newShader("dynamic_sprite_object.glsl")
+	dynamicSpriteShader:send("cameraRot", camera.rot)
+	dynamicSpriteShadowShader = love.graphics.newShader("dynamic_sprite_object_shadow.glsl")
+	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	initializeBuffers()
-	generateRandomTrees(10000)
+	generateRandomTrees(4000)
 	
 end
 
@@ -108,13 +112,17 @@ function prerenderSpritestack(mesh, normalmap, Nangles, Nmoisture, canvas, norma
 	if not canvas or not normalCanvas then
 		canvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
 		normalCanvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
+		canvas:setWrap("repeat")
+		normalCanvas:setWrap("repeat")
 	end
 	local SpriteObject = {}
     SpriteObject.normalmap = normalCanvas
+	SpriteObject.Nangles = Nangles
+	SpriteObject.Nmoisture = Nmoisture
 	-- centered vertex coordinates (origin at bottom center of bounding cylinder)
 	local x1 = -maxRadius
 	local x2 = maxRadius
-	local y1 = -maxHeight-maxRadius/2
+	local y1 = -maxHeight*256-maxRadius/2
 	local y2 = maxRadius/2
 	-- normalized texture coordinates 
 	local u1 = 0
@@ -142,12 +150,12 @@ function prerenderSpritestack(mesh, normalmap, Nangles, Nmoisture, canvas, norma
 			love.graphics.setCanvas({canvas, normalCanvas})
 			spritestackToSpriteShader:send("objectRot", (i-1) * math.pi*2 / Nangles)
 			spritestackToSpriteShader:send("humidity", math.pow(j/Nmoisture, 2))
-			local x, y = maxRadius + 2* maxRadius * i, j*(maxHeight*256 + maxRadius) - maxRadius/2
+			local x, y = maxRadius + 2* maxRadius * (i-1), j*(maxHeight*256 + maxRadius) - maxRadius/2
 			love.graphics.draw(mesh, x, y) --draw sprite
 		end
 	end
 	love.graphics.setCanvas()
-	return canvas, normalCanvas
+	return canvas, normalCanvas, SpriteObject
 end
 
 -- debug function for displaying contents of anything as text
@@ -218,6 +226,7 @@ function loadTextures()
 	voxelbush = loadSpriteStack("textures/bush1.json", bush1)
 	voxelcorn = loadSpriteStack("textures/corn1.json", corn1)
 	voxelbirch = loadSpriteStack("textures/birch1.json", birch1)
+	voxelhut = loadSpriteStack("textures/small_hut1.json", small_hut1)
 
 	peasant_worker_col = love.graphics.newImage("textures/peasant_worker_col.png")
 	peasant_worker_nor = love.graphics.newImage("textures/peasant_worker_nor.png")
@@ -271,6 +280,9 @@ function initializeBuffers()
 	decalShader:send("normalmap", normalMap)
 	decalShader:send("geomBuffer", geomBuffer)
 	decalShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
+	dynamicSpriteShader:send("shadowmap", shadowMap)
+	dynamicSpriteShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
+	dynamicSpriteShader:send("geomBuffer", geomBuffer)
 	gridSizeX = love.graphics.getWidth()
 	gridSizeY = love.graphics.getHeight() + 256 * mapGridScale / 2
 	screenGrid = generateScreenGridMesh(math.floor(gridSizeX * grid_density), math.floor(gridSizeY * grid_density))
@@ -278,7 +290,20 @@ function initializeBuffers()
 	objectShadows = love.graphics.newCanvas(gridSizeX, gridSizeY, {format="r8"})
 	terrainGeomShader:send("objectShadows", objectShadows)
 	--screenGrid:setTexture(sandTex)
-	birchSpritesheet, birchSpritesheetNor = prerenderSpritestack(voxelbirch, birch1_nor, 8, 4)
+	if not birchSprite then
+		birchSpritesheet, birchSpritesheetNor, birchSprite = prerenderSpritestack(voxelbirch, birch1_nor, 8, 4)
+		pineSpritesheet, pineSpritesheetNor, pineSprite = prerenderSpritestack(voxelpine, pine1_nor, 8, 4)
+		bushSpritesheet, bushSpritesheetNor, bushSprite = prerenderSpritestack(voxelbush, bush1_nor, 8, 4)
+		hutSpritesheet, hutSpritesheetNor, hutSprite = prerenderSpritestack(voxelhut, small_hut1_nor, 8, 1)
+		cornSpritesheet, cornSpritesheetNor, cornSprite = prerenderSpritestack(voxelcorn, corn1_nor, 8, 4)
+		cornSpritesheet:setWrap("repeat")
+	else
+		prerenderSpritestack(voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
+		prerenderSpritestack(voxelpine, pine1_nor, 8, 4, pineSpritesheet, pineSpritesheetNor)
+		prerenderSpritestack(voxelbush, bush1_nor, 8, 4, bushSpritesheet, bushSpritesheetNor)
+		prerenderSpritestack(voxelhut, small_hut1_nor, 8, 1, hutSpritesheet, hutSpritesheetNor)
+		prerenderSpritestack(voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
+	end
 end
 function updateBuffers()
 	-- buffers operate directly on global canvases to avoid reassigning them on the gpu
@@ -290,9 +315,7 @@ end
 
 function place_building(x, y, rot)
 	local height = heightData:getPixel(x, y)
-	local building = loadSpriteStack("textures/small_hut1.json", small_hut1)
-	rot = rot + math.random() * 0.1 - 0.05
-	addBuilding({image=building, height=height * 256, normalmap=small_hut1_nor}, x, y, rot, false)
+	addBuilding({image=hutSprite, height=height * 256, normalmap=hutSpritesheetNor}, x, y, rot, false)
 	setHeight_rect(x-3, y-2, x+3, y+2, height)
 end
 
@@ -368,11 +391,14 @@ function generateRandomTrees(n)
 		local y = math.random() * mapSizeY
 		local rot = math.random() * 2 * math.pi
 		if i % 3 == 0 then
-			addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
+			--addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
+			addPlant({image=birchSprite, height=getTerrainHeight(x, y), normalmap=birchSpritesheetNor}, x, y, rot, false)
 		elseif i % 3 == 1 then
-			addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
+			--addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
+			addPlant({image=pineSprite, height=getTerrainHeight(x, y), normalmap=pineSpritesheetNor}, x, y, rot, false)
 		else
-			addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
+			--addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
+			addPlant({image=bushSprite, height=getTerrainHeight(x, y), normalmap=bushSpritesheetNor}, x, y, rot, false)
 		end
 		--addUnit(peasant_worker, x, y, rot)
 	end
@@ -477,8 +503,14 @@ function love.wheelmoved(x, y)
 	spritestackShader:send("cameraRot", camera.rot)
 	spritestackShadowShader:send("cameraRot", camera.rot)
 	spriteShadowShader:send("cameraRot", camera.rot)
+	dynamicSpriteShader:send("cameraRot", camera.rot)
+	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	decalShader:send("rot", camera.rot)
 	prerenderSpritestack(voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
+	prerenderSpritestack(voxelpine, pine1_nor, 8, 4, pineSpritesheet, pineSpritesheetNor)
+	prerenderSpritestack(voxelbush, bush1_nor, 8, 4, bushSpritesheet, bushSpritesheetNor)
+	prerenderSpritestack(voxelhut, small_hut1_nor, 8, 1, hutSpritesheet, hutSpritesheetNor)
+	prerenderSpritestack(voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
 end
 
 function love.keypressed(key, u)
@@ -489,7 +521,7 @@ function love.keypressed(key, u)
 		editState.toolStrength = editState.toolStrength - 1;
 	end
 	if key == "r" then
-		editState.placementRot = editState.placementRot + math.pi/2;
+		editState.placementRot = editState.placementRot + math.pi/4;
 		editState.placementRot = math.mod(editState.placementRot, math.pi*2);
 	end
 	if key == "escape" then
@@ -540,12 +572,23 @@ function love.draw()
 		for j = minY, maxY do
 			if(getObject(i, j)) then
 				local object = getObject(i, j)
-				love.graphics.setShader(spritestackShadowShader)
+				--[[ love.graphics.setShader(spritestackShadowShader)
 				spritestackShadowShader:send("objectRot", object.rot)
 				spritestackShadowShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
 				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 				love.graphics.draw(object.object.image, x, y, 0, 1, 1, 0, 0) --draw sprite
+				spriteCount = spriteCount + 1 ]]
+				love.graphics.setShader(dynamicSpriteShadowShader)
+				dynamicSpriteShadowShader:send("objectRot", object.rot)
+				dynamicSpriteShadowShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
+				dynamicSpriteShadowShader:send("Nangles", object.object.image.Nangles)
+				dynamicSpriteShadowShader:send("Nmoisture", object.object.image.Nmoisture)
+				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
+				love.graphics.setBlendMode("alpha", "premultiplied")
+				love.graphics.draw(object.object.image.sprite, x, y) --draw sprite
+				love.graphics.setBlendMode("alpha")
 				spriteCount = spriteCount + 1
+
 			end
 			if getUnit(i, j) then
 				local unit = getUnit(i, j)
@@ -590,7 +633,7 @@ function love.draw()
 	--draw objects
 	local function drawSpritestack(j, i)
 		if(getObject(j, i)) then
-			local object = getObject(j, i)
+			--[[ local object = getObject(j, i)
 			love.graphics.setShader(spritestackShader)
 			love.graphics.setColor(1,1,1,1)
 			spritestackShader:send("objectRot", object.rot)
@@ -601,7 +644,23 @@ function love.draw()
 			y = y - object.object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local margin = 100
 			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
-			love.graphics.draw(object.object.image, x, y, 0, 1, 1, 0, 0) --draw sprite
+			love.graphics.draw(object.object.image, x, y, 0, 1, 1, 0, 0) --draw sprite ]]
+			local object = getObject(j, i)
+			love.graphics.setShader(dynamicSpriteShader)
+			love.graphics.setColor(1,1,1,1)
+			dynamicSpriteShader:send("objectRot", object.rot)
+			dynamicSpriteShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
+			dynamicSpriteShader:send("objectWorldPos", {object.x/mapSizeX, object.y/mapSizeY, object.object.height/256})
+			dynamicSpriteShader:send("normalMap", object.object.normalmap)
+			dynamicSpriteShader:send("Nangles", object.object.image.Nangles)
+			dynamicSpriteShader:send("Nmoisture", object.object.image.Nmoisture)
+			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
+			y = y - object.object.height * mapGridScale / 2 --displace current sprite according to its height value
+			local margin = 100
+			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
+			love.graphics.setBlendMode("alpha", "premultiplied")
+			love.graphics.draw(object.object.image.sprite, x, y) --draw sprite
+			love.graphics.setBlendMode("alpha")
 		end
 	end
 	local function drawSprite(j, i)
@@ -673,7 +732,7 @@ function love.draw()
 	love.graphics.draw(fluidSim.tmpBuffer, 0, 0, 0, 1/fluidSim.tmpBuffer:getWidth()*minimapSize)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	love.graphics.draw(birchSpritesheetNor, 0, 256)
+	love.graphics.draw(hutSpritesheetNor, 0, 256)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)

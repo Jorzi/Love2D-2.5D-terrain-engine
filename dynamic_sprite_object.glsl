@@ -22,9 +22,10 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
 {
 
 	localXY =  vertex_position.xy;
-    float xShift = floor(objectRot/(2*M_PI)*Nangles) / Nangles;
+    float xShift = floor(objectRot/(2*M_PI)*Nangles+0.5) / Nangles;
     VaryingTexCoord.x += xShift;
-    float yShift = floor(humidity*Nmoisture) / Nmoisture;
+    float yShift = floor(humidity*Nmoisture+0.5) / Nmoisture;
+    if (Nmoisture == 1) yShift=0;
     VaryingTexCoord.y += yShift;
 	return transform_projection * vertex_position;
 }
@@ -33,7 +34,8 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
 #ifdef PIXEL
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
-	float height = objectWorldPos.z - (localXY.y - 5)/(255*5);
+	vec2 sunlight = Texel(normalMap, texture_coords).rg;
+    float height = objectWorldPos.z + sunlight.g/5;
 	vec3 groundCoords = Texel(geomBuffer, screen_coords/screenSize).rgb;
 	if (height <= groundCoords.z) discard;
 	vec4 texturecolor = Texel(tex, texture_coords);
@@ -44,13 +46,12 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 	} */
 	float shadowHeight = Texel(shadowmap, objectWorldPos.xy + 1.0/8000 * vec2(localXY.x * cos(cameraRot) , localXY.x * sin(cameraRot) )).r;
 
-	vec3 nor = 2 * Texel(normalMap, texture_coords).rgb - 1;
-    nor.y *=-1;
-	nor = normalize(nor);
-
-	vec3 lightDir = normalize(vec3(1,1,1));
-	lightDir = vec3(lightDir.x * cos(cameraRot) - lightDir.y * sin(cameraRot), lightDir.x * sin(cameraRot) + lightDir.y * cos(cameraRot), lightDir.z);
-	float lightFactor = clamp(0.8 * dot(lightDir, nor)+0.2, 0, 1);
+	//vec3 nor = 2 * Texel(normalMap, texture_coords).rgb - 1;
+	//nor = normalize(nor);
+	//vec3 lightDir = normalize(vec3(1,1,1));
+    //float lightFactor = clamp(0.8 * dot(lightDir, nor)+0.2, 0, 1);
+    
+	float lightFactor = sunlight.r;
 	lightFactor *= (1 - clamp((shadowHeight - height + 0.001)*80, 0, 1));
 	lightFactor = 0.7 * lightFactor + 0.3;
     return vec4(texturecolor.rgb * lightFactor, texturecolor.a);

@@ -11,6 +11,7 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
 {
 	float lightDir = radians(-45.0);
     lightDir = lightDir - cameraRot;
+    vertex_position.y *= 2;
     vertex_position.xy = vec2(vertex_position.x * cos(lightDir) - vertex_position.y * sin(lightDir), vertex_position.x * sin(lightDir) + vertex_position.y * cos(lightDir));
     vertex_position.y *= 0.5;
 	return transform_projection * vertex_position;

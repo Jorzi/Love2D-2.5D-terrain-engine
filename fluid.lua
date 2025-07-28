@@ -72,7 +72,9 @@ function updateFluid(fluid)
     love.graphics.setBlendMode("alpha") 
     fluid.tickCounter = fluid.tickCounter + 1
     if fluid.tickCounter >= 10 then
+        local tmp = fluid.fluidData
         fluid.fluidData = fluid.fluidLayer:newImageData()
+        tmp:release()
         fluid.tickCounter = 0
     end
 end

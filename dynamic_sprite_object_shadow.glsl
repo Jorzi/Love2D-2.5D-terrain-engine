@@ -14,12 +14,13 @@ float rand(vec2 co){
 vec4 position( mat4 transform_projection, vec4 vertex_position )
 {
     float lightDir = radians(-45.0);
-    float rot = objectRot+lightDir;
+    lightDir = lightDir - cameraRot;
+    float rot = objectRot + cameraRot;
     float xShift = (floor(rot/(2*M_PI)*Nangles+0.5)+1) / Nangles;
     VaryingTexCoord.x += xShift;
     float yShift = floor(humidity*Nmoisture+0.5) / Nmoisture;
     VaryingTexCoord.y += yShift;
-    lightDir = lightDir - cameraRot;
+    vertex_position.y *= 2;
     vertex_position.xy = vec2(vertex_position.x * cos(lightDir) - vertex_position.y * sin(lightDir), vertex_position.x * sin(lightDir) + vertex_position.y * cos(lightDir));
     vertex_position.y *= 0.5;
 	return transform_projection * vertex_position;

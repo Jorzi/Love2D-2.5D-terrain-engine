@@ -315,7 +315,7 @@ end
 
 function place_building(x, y, rot)
 	local height = heightData:getPixel(x, y)
-	addBuilding({image=hutSprite, height=height * 256, normalmap=hutSpritesheetNor}, x, y, rot, false)
+	addBuilding({image=hutSprite.sprite, height=height * 256, normalmap=hutSprite.normalmap, Nangles = hutSprite.Nangles, Nmoisture = hutSprite.Nmoisture}, x, y, rot, false)
 	setHeight_rect(x-3, y-2, x+3, y+2, height)
 end
 
@@ -392,13 +392,13 @@ function generateRandomTrees(n)
 		local rot = math.random() * 2 * math.pi
 		if i % 3 == 0 then
 			--addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
-			addPlant({image=birchSprite, height=getTerrainHeight(x, y), normalmap=birchSpritesheetNor}, x, y, rot, false)
+			addPlant({image=birchSprite.sprite, height=getTerrainHeight(x, y), normalmap=birchSprite.normalmap, Nangles = birchSprite.Nangles, Nmoisture = birchSprite.Nmoisture}, x, y, rot, false)
 		elseif i % 3 == 1 then
 			--addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
-			addPlant({image=pineSprite, height=getTerrainHeight(x, y), normalmap=pineSpritesheetNor}, x, y, rot, false)
+			addPlant({image=pineSprite.sprite, height=getTerrainHeight(x, y), normalmap=pineSprite.normalmap, Nangles = pineSprite.Nangles, Nmoisture = pineSprite.Nmoisture}, x, y, rot, false)
 		else
 			--addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
-			addPlant({image=bushSprite, height=getTerrainHeight(x, y), normalmap=bushSpritesheetNor}, x, y, rot, false)
+			addPlant({image=bushSprite.sprite, height=getTerrainHeight(x, y), normalmap=bushSprite.normalmap, Nangles = bushSprite.Nangles, Nmoisture = bushSprite.Nmoisture}, x, y, rot, false)
 		end
 		--addUnit(peasant_worker, x, y, rot)
 	end
@@ -581,11 +581,11 @@ function love.draw()
 				love.graphics.setShader(dynamicSpriteShadowShader)
 				dynamicSpriteShadowShader:send("objectRot", object.rot)
 				dynamicSpriteShadowShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-				dynamicSpriteShadowShader:send("Nangles", object.object.image.Nangles)
-				dynamicSpriteShadowShader:send("Nmoisture", object.object.image.Nmoisture)
+				dynamicSpriteShadowShader:send("Nangles", object.object.Nangles)
+				dynamicSpriteShadowShader:send("Nmoisture", object.object.Nmoisture)
 				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 				love.graphics.setBlendMode("alpha", "premultiplied")
-				love.graphics.draw(object.object.image.sprite, x, y) --draw sprite
+				love.graphics.draw(object.object.image, x, y) --draw sprite
 				love.graphics.setBlendMode("alpha")
 				spriteCount = spriteCount + 1
 
@@ -652,14 +652,14 @@ function love.draw()
 			dynamicSpriteShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
 			dynamicSpriteShader:send("objectWorldPos", {object.x/mapSizeX, object.y/mapSizeY, object.object.height/256})
 			dynamicSpriteShader:send("normalMap", object.object.normalmap)
-			dynamicSpriteShader:send("Nangles", object.object.image.Nangles)
-			dynamicSpriteShader:send("Nmoisture", object.object.image.Nmoisture)
+			dynamicSpriteShader:send("Nangles", object.object.Nangles)
+			dynamicSpriteShader:send("Nmoisture", object.object.Nmoisture)
 			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 			y = y - object.object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local margin = 100
 			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
 			love.graphics.setBlendMode("alpha", "premultiplied")
-			love.graphics.draw(object.object.image.sprite, x, y) --draw sprite
+			love.graphics.draw(object.object.image, x, y) --draw sprite
 			love.graphics.setBlendMode("alpha")
 		end
 	end

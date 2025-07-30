@@ -53,7 +53,7 @@ end
 
 function addPlant(plant, x, y, rot, walkable, blockerList)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {object = plant, objectType = "plant", x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {drawable = plant.image, normalmap = plant.normalmap, Nangles = plant.Nangles, Nmoisture = plant.Nmoisture, objectType = "plant", height = plant.height, x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
     if walkable then
         mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
     else
@@ -68,7 +68,7 @@ end
 
 function addBuilding(building, x, y, rot, walkable)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {object = building, objectType = "building", x=x, y=y, rot=rot}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {drawable = building.image, normalmap = building.normalmap, Nangles = building.Nangles, Nmoisture = building.Nmoisture, objectType = "building", height = building.height, x=x, y=y, rot=rot}
     if walkable then
         mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
     else

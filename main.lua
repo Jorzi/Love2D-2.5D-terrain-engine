@@ -581,11 +581,11 @@ function love.draw()
 				love.graphics.setShader(dynamicSpriteShadowShader)
 				dynamicSpriteShadowShader:send("objectRot", object.rot)
 				dynamicSpriteShadowShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-				dynamicSpriteShadowShader:send("Nangles", object.object.Nangles)
-				dynamicSpriteShadowShader:send("Nmoisture", object.object.Nmoisture)
+				dynamicSpriteShadowShader:send("Nangles", object.Nangles)
+				dynamicSpriteShadowShader:send("Nmoisture", object.Nmoisture)
 				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 				love.graphics.setBlendMode("alpha", "premultiplied")
-				love.graphics.draw(object.object.image, x, y) --draw sprite
+				love.graphics.draw(object.drawable, x, y) --draw sprite
 				love.graphics.setBlendMode("alpha")
 				spriteCount = spriteCount + 1
 
@@ -650,16 +650,16 @@ function love.draw()
 			love.graphics.setColor(1,1,1,1)
 			dynamicSpriteShader:send("objectRot", object.rot)
 			dynamicSpriteShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-			dynamicSpriteShader:send("objectWorldPos", {object.x/mapSizeX, object.y/mapSizeY, object.object.height/256})
-			dynamicSpriteShader:send("normalMap", object.object.normalmap)
-			dynamicSpriteShader:send("Nangles", object.object.Nangles)
-			dynamicSpriteShader:send("Nmoisture", object.object.Nmoisture)
+			dynamicSpriteShader:send("objectWorldPos", {object.x/mapSizeX, object.y/mapSizeY, object.height/256})
+			dynamicSpriteShader:send("normalMap", object.normalmap)
+			dynamicSpriteShader:send("Nangles", object.Nangles)
+			dynamicSpriteShader:send("Nmoisture", object.Nmoisture)
 			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-			y = y - object.object.height * mapGridScale / 2 --displace current sprite according to its height value
+			y = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local margin = 100
 			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
 			love.graphics.setBlendMode("alpha", "premultiplied")
-			love.graphics.draw(object.object.image, x, y) --draw sprite
+			love.graphics.draw(object.drawable, x, y) --draw sprite
 			love.graphics.setBlendMode("alpha")
 		end
 	end

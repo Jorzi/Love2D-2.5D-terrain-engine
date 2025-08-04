@@ -12,6 +12,7 @@ love.filesystem.load("terrain.lua")()
 love.filesystem.load("unit.lua")()
 love.filesystem.load("decal.lua")()
 love.filesystem.load("mapgrid.lua")()
+love.filesystem.load("gui.lua")()
 
 function love.load()
 	love.window.setMode(love.graphics.getWidth(), love.graphics.getHeight(),
@@ -61,7 +62,7 @@ function love.load()
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	initializeBuffers()
 	generateRandomTrees(4000)
-	
+	loadGui()
 end
 
 function loadSpriteStack(filename, image)
@@ -235,6 +236,7 @@ end
 
 function initializeBuffers()
 	local img = love.graphics.newImage(heightData)
+	love.graphics.setColor(1,1,1,1)
 	love.graphics.setCanvas(heightMap)
 	love.graphics.setShader()
 	love.graphics.draw(img)
@@ -408,7 +410,7 @@ function recalculateHeights(x1, y1, x2, y2)
 	for i = x1, x2 do
 		for j = y1, y2 do
 			if getObject(i, j) then
-				getObject(i, j).object.height = getTerrainHeight(i, j)
+				getObject(i, j).height = getTerrainHeight(i, j)
 			end
 		end
 	end
@@ -457,6 +459,7 @@ function love.update(dt)
 		love.report = love.profiler.report(20)
 		love.profiler.reset()
 	end ]]
+	luis.update(dt)
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
@@ -466,9 +469,10 @@ function love.mousepressed( x, y, button, istouch, presses )
 			mouseState.startY = y
 		end
 	end
+	luis.mousepressed(x, y, button, istouch)
 end
 
-function love.mousereleased(x, y, button)
+function love.mousereleased(x, y, button, isTouch)
 	if editState.activeTool == "changeHeight_rect" or editState.activeTool == "levelHeight_rect" or editState.activeTool == "place_soil" then
 		if button == 1 then
 			local x1, y1 = mouseWorldPosition(mouseState.startX, mouseState.startY)
@@ -492,6 +496,7 @@ function love.mousereleased(x, y, button)
 			addUnit(peasant_worker, x2, y2, editState.placementRot)
 		end
 	end
+	luis.mousereleased(x, y, button, istouch)
 end
 
 function love.wheelmoved(x, y)
@@ -513,49 +518,55 @@ function love.wheelmoved(x, y)
 	prerenderSpritestack(voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
 end
 
-function love.keypressed(key, u)
+function love.keypressed(key, scancode, isrepeat)
 	if key == "t" then
-		editState.toolStrength = editState.toolStrength + 1;
+		editState.toolStrength = editState.toolStrength + 1
 	end
 	if key == "g" then
-		editState.toolStrength = editState.toolStrength - 1;
+		editState.toolStrength = editState.toolStrength - 1
 	end
 	if key == "r" then
-		editState.placementRot = editState.placementRot + math.pi/4;
-		editState.placementRot = math.mod(editState.placementRot, math.pi*2);
+		editState.placementRot = editState.placementRot + math.pi/4
+		editState.placementRot = math.mod(editState.placementRot, math.pi*2)
 	end
 	if key == "escape" then
-		editState.activeTool = 'none';
+		editState.activeTool = 'none'
 	end
 	if key == "1" then
-		editState.activeTool = 'changeHeight_brush';
+		editState.activeTool = 'changeHeight_brush'
 	end
 	if key == "2" then
-		editState.activeTool = 'levelHeight_brush';
+		editState.activeTool = 'levelHeight_brush'
 	end
 	if key == "3" then
-		editState.activeTool = 'ditch';
+		editState.activeTool = 'ditch'
 	end
 	if key == "4" then
-		editState.activeTool = 'wall';
+		editState.activeTool = 'wall'
 	end
 	if key == "5" then
-		editState.activeTool = 'place_building';
+		editState.activeTool = 'place_building'
 	end
 	if key == "6" then
-		editState.activeTool = 'place_soil';
+		editState.activeTool = 'place_soil'
 	end
 	if key == "7" then
-		editState.activeTool = 'place_road';
+		editState.activeTool = 'place_road'
 	end
 	if key == "8" then
-		editState.activeTool = 'place_unit';
+		editState.activeTool = 'place_unit'
 	end
+	luis.keypressed(key)
+end
+
+function love.keyreleased(key)
+
 end
 
 function love.resize(w, h)
 	love.window.setMode(w, h, {resizable=true, msaa=4})
 	initializeBuffers()
+	resizeGuiLayout()
 end
 
 function love.draw()
@@ -760,6 +771,7 @@ function love.draw()
 	spriteShader:send("normalMap", peasant_worker.normalmap)
 	drawUnit(peasant_worker, x, y, 0, camera.rot)
 	love.graphics.setShader()
+	luis.draw()
 	love.graphics.setColor(1,1,1,1)
 end
 
@@ -828,3 +840,4 @@ function cameraShaderTransform(x, y)
 	decalShader:send("cameraSize", {scaleX, scaleY})
 	--terrainGeomShader:send("pos", {x , y })
 end
+

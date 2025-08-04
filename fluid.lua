@@ -42,7 +42,8 @@ end
 
 
 function updateFluid(fluid)
-    love.graphics.setBlendMode('replace', 'premultiplied') 
+    love.graphics.setBlendMode('replace', 'premultiplied')
+    love.graphics.setColor(1,1,1,1) 
     for i = 1, 2 do
         --3 fluid sim steps, 1 blur
         love.graphics.setShader(fluid.fluidsimShader)

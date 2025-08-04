@@ -7,10 +7,10 @@ luis = initLuis("luis/widgets")
 luis.flux = require("luis.3rdparty.flux")
 
 function loadGui()
-    local width = 20
+    local width = 16
     local height = love.graphics.getHeight() / luis.gridSize
-    local posX = love.graphics.getWidth() / luis.gridSize - width
-    local posY = 0
+    local posX = love.graphics.getWidth() / luis.gridSize - width + 1
+    local posY = 1
      local container = luis.newFlexContainer(width, height, posY, posX)
 
     -- Add some widgets to the container

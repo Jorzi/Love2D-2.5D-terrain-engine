@@ -18,10 +18,10 @@ function loadGui()
     local button2 = luis.newButton("Level terrain", 15, 3, function() editState.activeTool = 'levelHeight_brush' end, function()  end, 5, 2)
     local button3 = luis.newButton("Corn field", 15, 3, function() editState.activeTool = 'place_soil' end, function()  end, 5, 2)
     local slider1 = luis.newSlider(-10, 10, 1, 10, 2, function(value)
-        editState.toolStrength = value
+        editState.toolStrength = math.floor(value)
     end, 10, 2)
     local slider2 = luis.newSlider(1, 20, 5, 8, 2, function(value)
-        editState.radius = value
+        editState.radius = math.floor(value)
     end, 10, 2)
     local label1 = luis.newLabel("Tool Strength", 5, 2, 0, 10)
     local label2 = luis.newLabel("Tool Radius", 5, 2, 0, 10)

@@ -744,7 +744,7 @@ function love.draw()
 	
 	--overlays
 	text_out:add(string.format("Sprites on screen: %d, sector: %d", spriteCount, sector), 0, 40)
-	text_out:add(string.format("GUIClick: %s", tostring(mouseState.GUIClick)), 0, 60)
+	text_out:add(string.format("Tool radius: %f", editState.radius), 0, 60)
 	--text_out:add(dump(buildings), 0, 60)
 	local minimapSize = 256
 	love.graphics.draw(normalMap, 0, 0, 0, 1/normalMap:getWidth()*minimapSize)

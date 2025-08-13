@@ -4,7 +4,7 @@ mapSizeY = 512
 mapGridScale = 10 --screen pixels per map texel
 grid_density = 0.5 -- vertices per pixel for screen grid
 mouseState = {startX = 0, startY = 0, GUIClick = false}
-editState = {toolStrength = 1, activeTool = "none", placementRot = 0}
+editState = {toolStrength = 1, activeTool = "none", placementRot = 0, radius = 5}
 chunkSize = 64;
 
 love.filesystem.load("fluid.lua")()
@@ -439,9 +439,9 @@ function love.update(dt)
 	cursorX, cursorY = mouseWorldPosition(love.mouse.getPosition())
 	if love.mouse.isDown(1) and not mouseState.GUIClick then
 		if editState.activeTool == "changeHeight_brush" then
-			changeHeight_brush(cursorX, cursorY, 5, editState.toolStrength)
+			changeHeight_brush(cursorX, cursorY, editState.radius, editState.toolStrength)
 		elseif editState.activeTool == "levelHeight_brush" then
-			levelHeight_brush(cursorX, cursorY, 5)
+			levelHeight_brush(cursorX, cursorY, editState.radius)
 		elseif editState.activeTool == "place_road" then
 			addRoad(cursorX, cursorY)
 		end

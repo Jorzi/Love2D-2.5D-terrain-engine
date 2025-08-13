@@ -17,13 +17,21 @@ function loadGui()
     local button1 = luis.newButton("Raise/lower", 15, 3, function() editState.activeTool = 'changeHeight_brush' end, function()  end, 5, 2)
     local button2 = luis.newButton("Level terrain", 15, 3, function() editState.activeTool = 'levelHeight_brush' end, function()  end, 5, 2)
     local button3 = luis.newButton("Corn field", 15, 3, function() editState.activeTool = 'place_soil' end, function()  end, 5, 2)
-    local slider = luis.newSlider(-10, 10, 1, 10, 2, function(value)
+    local slider1 = luis.newSlider(-10, 10, 1, 10, 2, function(value)
         editState.toolStrength = value
     end, 10, 2)
+    local slider2 = luis.newSlider(1, 20, 5, 8, 2, function(value)
+        editState.radius = value
+    end, 10, 2)
+    local label1 = luis.newLabel("Tool Strength", 5, 2, 0, 10)
+    local label2 = luis.newLabel("Tool Radius", 5, 2, 0, 10)
 
     container:addChild(button1)
     container:addChild(button2)
-    container:addChild(slider)
+    container:addChild(slider1)
+    container:addChild(label1)
+    container:addChild(slider2)
+    container:addChild(label2)
     container:addChild(button3)
 
     luis.newLayer("main")

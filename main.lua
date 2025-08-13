@@ -3,7 +3,7 @@ mapSizeX = 512
 mapSizeY = 512
 mapGridScale = 10 --screen pixels per map texel
 grid_density = 0.5 -- vertices per pixel for screen grid
-mouseState = {StartX = 0, StartY = 0}
+mouseState = {startX = 0, startY = 0, GUIClick = false}
 editState = {toolStrength = 1, activeTool = "none", placementRot = 0}
 chunkSize = 64;
 
@@ -437,7 +437,7 @@ function love.update(dt)
 	end
 	cameraShaderTransform(camera.x, camera.y)
 	cursorX, cursorY = mouseWorldPosition(love.mouse.getPosition())
-	if love.mouse.isDown(1) then
+	if love.mouse.isDown(1) and not mouseState.GUIClick then
 		if editState.activeTool == "changeHeight_brush" then
 			changeHeight_brush(cursorX, cursorY, 5, editState.toolStrength)
 		elseif editState.activeTool == "levelHeight_brush" then
@@ -463,17 +463,24 @@ function love.update(dt)
 end
 
 function love.mousepressed( x, y, button, istouch, presses )
-	if editState.activeTool == "changeHeight_rect" or editState.activeTool == "levelHeight_rect" or editState.activeTool == "place_soil" then
+	if luis.mousepressed(x, y, button, istouch) then
+		mouseState.GUIClick = true
+		return
+	elseif editState.activeTool == "changeHeight_rect" or editState.activeTool == "levelHeight_rect" or editState.activeTool == "place_soil" then
 		if button == 1 then
 			mouseState.startX = x
 			mouseState.startY = y
 		end
 	end
-	luis.mousepressed(x, y, button, istouch)
+	
 end
 
 function love.mousereleased(x, y, button, isTouch)
-	if editState.activeTool == "changeHeight_rect" or editState.activeTool == "levelHeight_rect" or editState.activeTool == "place_soil" then
+	if luis.mousereleased(x, y, button, istouch) or mouseState.GUIClick then
+		io.write("GUI Click!\n")
+		mouseState.GUIClick = false
+		return
+	elseif editState.activeTool == "changeHeight_rect" or editState.activeTool == "levelHeight_rect" or editState.activeTool == "place_soil" then
 		if button == 1 then
 			local x1, y1 = mouseWorldPosition(mouseState.startX, mouseState.startY)
 			local x2, y2 = mouseWorldPosition(x, y)
@@ -496,7 +503,7 @@ function love.mousereleased(x, y, button, isTouch)
 			addUnit(peasant_worker, x2, y2, editState.placementRot)
 		end
 	end
-	luis.mousereleased(x, y, button, istouch)
+	
 end
 
 function love.wheelmoved(x, y)
@@ -737,6 +744,7 @@ function love.draw()
 	
 	--overlays
 	text_out:add(string.format("Sprites on screen: %d, sector: %d", spriteCount, sector), 0, 40)
+	text_out:add(string.format("GUIClick: %s", tostring(mouseState.GUIClick)), 0, 60)
 	--text_out:add(dump(buildings), 0, 60)
 	local minimapSize = 256
 	love.graphics.draw(normalMap, 0, 0, 0, 1/normalMap:getWidth()*minimapSize)

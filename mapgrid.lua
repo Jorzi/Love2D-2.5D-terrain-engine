@@ -77,7 +77,7 @@ function addBuilding(building, x, y, rot, walkable)
 end
 
 function updatePlants (dt)
-    local Nframes = 20 --distribute updates over N frames to reduce load
+    local Nframes = 10 --distribute updates over N frames to reduce load
     local n = love.frame%Nframes
     local index = 0;
     for k, v in pairs(mapGrid) do

@@ -60,6 +60,7 @@ function love.load()
 	dynamicSpriteShader:send("cameraRot", camera.rot)
 	dynamicSpriteShadowShader = love.graphics.newShader("dynamic_sprite_object_shadow.glsl")
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
+	minimapShader = love.graphics.newShader("minimap.glsl")
 	initializeBuffers()
 	generateRandomTrees(4000)
 	loadGui()
@@ -222,16 +223,17 @@ function loadTextures()
 	road_tiles = love.graphics.newImage("textures/road_tiles.png")
 	road_tiles:setWrap("clamp")
 	road_tiles:setFilter("nearest")
-	voxelpalm = loadSpriteStack("textures/palm1.json", palm1)
-	voxelpine = loadSpriteStack("textures/pine1.json", pine1)
-	voxelbush = loadSpriteStack("textures/bush1.json", bush1)
-	voxelcorn = loadSpriteStack("textures/corn1.json", corn1)
-	voxelbirch = loadSpriteStack("textures/birch1.json", birch1)
-	voxelhut = loadSpriteStack("textures/small_hut1.json", small_hut1)
+	assets = {}
+	assets.voxelpalm = loadSpriteStack("textures/palm1.json", palm1)
+	assets.voxelpine = loadSpriteStack("textures/pine1.json", pine1)
+	assets.voxelbush = loadSpriteStack("textures/bush1.json", bush1)
+	assets.voxelcorn = loadSpriteStack("textures/corn1.json", corn1)
+	assets.voxelbirch = loadSpriteStack("textures/birch1.json", birch1)
+	assets.voxelhut = loadSpriteStack("textures/small_hut1.json", small_hut1)
 
 	peasant_worker_col = love.graphics.newImage("textures/peasant_worker_col.png")
 	peasant_worker_nor = love.graphics.newImage("textures/peasant_worker_nor.png")
-	peasant_worker = newUnit("textures/peasant_worker_col.json", peasant_worker_col, peasant_worker_nor)
+	assets.peasant_worker = newUnit("textures/peasant_worker_col.json", peasant_worker_col, peasant_worker_nor)
 end
 
 function initializeBuffers()
@@ -257,6 +259,8 @@ function initializeBuffers()
 	end
 	terrainShader:send("waterDepth", fluidSim.tmpBuffer)
 	terrainGeomShader:send("waterDepth", fluidSim.tmpBuffer)
+	minimapShader:send("fluidsim", fluidSim.tmpBuffer)
+	
 
 	normalMap = love.graphics.newCanvas(heightMap:getWidth()*bufferScale, heightMap:getHeight()*bufferScale, {format="rgba8"})
 	shadowMap = love.graphics.newCanvas(heightMap:getWidth(), heightMap:getHeight(), {format="r8"})
@@ -292,19 +296,19 @@ function initializeBuffers()
 	objectShadows = love.graphics.newCanvas(gridSizeX, gridSizeY, {format="r8"})
 	terrainGeomShader:send("objectShadows", objectShadows)
 	--screenGrid:setTexture(sandTex)
-	if not birchSprite then
-		birchSpritesheet, birchSpritesheetNor, birchSprite = prerenderSpritestack(voxelbirch, birch1_nor, 8, 4)
-		pineSpritesheet, pineSpritesheetNor, pineSprite = prerenderSpritestack(voxelpine, pine1_nor, 8, 4)
-		bushSpritesheet, bushSpritesheetNor, bushSprite = prerenderSpritestack(voxelbush, bush1_nor, 8, 4)
-		hutSpritesheet, hutSpritesheetNor, hutSprite = prerenderSpritestack(voxelhut, small_hut1_nor, 8, 1)
-		cornSpritesheet, cornSpritesheetNor, cornSprite = prerenderSpritestack(voxelcorn, corn1_nor, 8, 4)
+	if not assets.birchSprite then
+		birchSpritesheet, birchSpritesheetNor, assets.birchSprite = prerenderSpritestack(assets.voxelbirch, birch1_nor, 8, 4)
+		pineSpritesheet, pineSpritesheetNor, assets.pineSprite = prerenderSpritestack(assets.voxelpine, pine1_nor, 8, 4)
+		bushSpritesheet, bushSpritesheetNor, assets.bushSprite = prerenderSpritestack(assets.voxelbush, bush1_nor, 8, 4)
+		hutSpritesheet, hutSpritesheetNor, assets.hutSprite = prerenderSpritestack(assets.voxelhut, small_hut1_nor, 8, 1)
+		cornSpritesheet, cornSpritesheetNor, assets.cornSprite = prerenderSpritestack(assets.voxelcorn, corn1_nor, 8, 4)
 		cornSpritesheet:setWrap("repeat")
 	else
-		prerenderSpritestack(voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
-		prerenderSpritestack(voxelpine, pine1_nor, 8, 4, pineSpritesheet, pineSpritesheetNor)
-		prerenderSpritestack(voxelbush, bush1_nor, 8, 4, bushSpritesheet, bushSpritesheetNor)
-		prerenderSpritestack(voxelhut, small_hut1_nor, 8, 1, hutSpritesheet, hutSpritesheetNor)
-		prerenderSpritestack(voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
+		prerenderSpritestack(assets.voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
+		prerenderSpritestack(assets.voxelpine, pine1_nor, 8, 4, pineSpritesheet, pineSpritesheetNor)
+		prerenderSpritestack(assets.voxelbush, bush1_nor, 8, 4, bushSpritesheet, bushSpritesheetNor)
+		prerenderSpritestack(assets.voxelhut, small_hut1_nor, 8, 1, hutSpritesheet, hutSpritesheetNor)
+		prerenderSpritestack(assets.voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
 	end
 end
 function updateBuffers()
@@ -317,7 +321,7 @@ end
 
 function place_building(x, y, rot)
 	local height = heightData:getPixel(x, y)
-	addBuilding({image=hutSprite.sprite, height=height * 256, normalmap=hutSprite.normalmap, Nangles = hutSprite.Nangles, Nmoisture = hutSprite.Nmoisture}, x, y, rot, false)
+	addBuilding({name = "hutSprite", image=assets.hutSprite.sprite, height=height * 256, normalmap=assets.hutSprite.normalmap, Nangles = assets.hutSprite.Nangles, Nmoisture = assets.hutSprite.Nmoisture}, x, y, rot, false)
 	setHeight_rect(x-3, y-2, x+3, y+2, height)
 end
 
@@ -394,13 +398,13 @@ function generateRandomTrees(n)
 		local rot = math.random() * 2 * math.pi
 		if i % 3 == 0 then
 			--addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
-			addPlant({image=birchSprite.sprite, height=getTerrainHeight(x, y), normalmap=birchSprite.normalmap, Nangles = birchSprite.Nangles, Nmoisture = birchSprite.Nmoisture}, x, y, rot, false)
+			addPlant({name = "birchSprite", image=assets.birchSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.birchSprite.normalmap, Nangles = assets.birchSprite.Nangles, Nmoisture = assets.birchSprite.Nmoisture}, x, y, rot, false)
 		elseif i % 3 == 1 then
 			--addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
-			addPlant({image=pineSprite.sprite, height=getTerrainHeight(x, y), normalmap=pineSprite.normalmap, Nangles = pineSprite.Nangles, Nmoisture = pineSprite.Nmoisture}, x, y, rot, false)
+			addPlant({name = "pineSprite", image=assets.pineSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.pineSprite.normalmap, Nangles = assets.pineSprite.Nangles, Nmoisture = assets.pineSprite.Nmoisture}, x, y, rot, false)
 		else
 			--addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
-			addPlant({image=bushSprite.sprite, height=getTerrainHeight(x, y), normalmap=bushSprite.normalmap, Nangles = bushSprite.Nangles, Nmoisture = bushSprite.Nmoisture}, x, y, rot, false)
+			addPlant({name = "bushSprite", image=assets.bushSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.bushSprite.normalmap, Nangles = assets.bushSprite.Nangles, Nmoisture = assets.bushSprite.Nmoisture}, x, y, rot, false)
 		end
 		--addUnit(peasant_worker, x, y, rot)
 	end
@@ -500,7 +504,7 @@ function love.mousereleased(x, y, button, isTouch)
 	elseif editState.activeTool == "place_unit" then
 		if button == 1 then
 			local x2, y2 = mouseWorldPosition(x, y)
-			addUnit(peasant_worker, x2, y2, editState.placementRot)
+			addUnit(assets.peasant_worker, x2, y2, editState.placementRot)
 		end
 	end
 	
@@ -518,11 +522,11 @@ function love.wheelmoved(x, y)
 	dynamicSpriteShader:send("cameraRot", camera.rot)
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	decalShader:send("rot", camera.rot)
-	prerenderSpritestack(voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
-	prerenderSpritestack(voxelpine, pine1_nor, 8, 4, pineSpritesheet, pineSpritesheetNor)
-	prerenderSpritestack(voxelbush, bush1_nor, 8, 4, bushSpritesheet, bushSpritesheetNor)
-	prerenderSpritestack(voxelhut, small_hut1_nor, 8, 1, hutSpritesheet, hutSpritesheetNor)
-	prerenderSpritestack(voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
+	prerenderSpritestack(assets.voxelbirch, birch1_nor, 8, 4, birchSpritesheet, birchSpritesheetNor)
+	prerenderSpritestack(assets.voxelpine, pine1_nor, 8, 4, pineSpritesheet, pineSpritesheetNor)
+	prerenderSpritestack(assets.voxelbush, bush1_nor, 8, 4, bushSpritesheet, bushSpritesheetNor)
+	prerenderSpritestack(assets.voxelhut, small_hut1_nor, 8, 1, hutSpritesheet, hutSpritesheetNor)
+	prerenderSpritestack(assets.voxelcorn, corn1_nor, 8, 4, cornSpritesheet, cornSpritesheetNor)
 end
 
 function love.keypressed(key, scancode, isrepeat)
@@ -747,11 +751,12 @@ function love.draw()
 	text_out:add(string.format("Tool radius: %f", editState.radius), 0, 60)
 	--text_out:add(dump(buildings), 0, 60)
 	local minimapSize = 256
+	love.graphics.setShader(minimapShader)
 	love.graphics.draw(normalMap, 0, 0, 0, 1/normalMap:getWidth()*minimapSize)
-	love.graphics.draw(fluidSim.tmpBuffer, 0, 0, 0, 1/fluidSim.tmpBuffer:getWidth()*minimapSize)
+	love.graphics.setShader()
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	love.graphics.draw(hutSpritesheetNor, 0, 256)
+	--love.graphics.draw(hutSpritesheetNor, 0, 256)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)
@@ -776,8 +781,8 @@ function love.draw()
 	spriteShader:send("objectRot", 0)
 	local worldX, worldY = mouseWorldPosition(x, y)
 	spriteShader:send("objectWorldPos", {worldX/mapSizeX, worldY/mapSizeY, getTerrainHeight(worldX, worldY)/256})
-	spriteShader:send("normalMap", peasant_worker.normalmap)
-	drawUnit(peasant_worker, x, y, 0, camera.rot)
+	spriteShader:send("normalMap", assets.peasant_worker.normalmap)
+	drawUnit(assets.peasant_worker, x, y, 0, camera.rot)
 	love.graphics.setShader()
 	luis.draw()
 	love.graphics.setColor(1,1,1,1)

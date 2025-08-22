@@ -104,6 +104,8 @@ function levelHeight_rect(x1, y1, x2, y2)
 end
 
 function levelHeight_brush(x, y, size)
+	x = clamp(x, 0, heightData:getWidth()-1)
+	y = clamp(y, 0, heightData:getHeight()-1)
 	local centerX = x
 	local centerY = y
 	local x1 = x - (size-1)
@@ -185,7 +187,7 @@ function placeSoil(x1, y1, x2, y2)
 			local chunkY = math.ceil(j/chunkSize)
 			local varX = math.random() * 0.2 - 0.1
 			local varY = math.random() * 0.2 - 0.1
-			addPlant({image=cornSprite.sprite, height=getTerrainHeight(i, j), normalmap=cornSprite.normalmap, Nangles = cornSprite.Nangles, Nmoisture = cornSprite.Nmoisture}, i+varX, j+varY, rot, true)
+			addPlant({name = "cornSprite", image=assets.cornSprite.sprite, height=getTerrainHeight(i, j), normalmap=assets.cornSprite.normalmap, Nangles = assets.cornSprite.Nangles, Nmoisture = assets.cornSprite.Nmoisture}, i+varX, j+varY, rot, true)
 		end
 	end
 

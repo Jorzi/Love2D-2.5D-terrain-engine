@@ -132,6 +132,7 @@ function string_split(s, d)
 	end
 	
 	for sub, j in string.gmatch(s, match) do
+		i = i + 1
 		t[i] = sub
 		f = j
 	end

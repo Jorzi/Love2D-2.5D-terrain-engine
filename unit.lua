@@ -1,7 +1,8 @@
-function newUnit(filename, texture, normalmap)
+function newUnit(filename, texture, normalmap, name)
     local unit = {}
     unit.texture = texture
     unit.normalmap = normalmap
+	unit.name = name
     local contents = love.filesystem.read(filename)
 	local data = json.decode(contents)
 	local i = 1

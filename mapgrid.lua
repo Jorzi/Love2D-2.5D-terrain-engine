@@ -102,3 +102,15 @@ function clearObject(x, y)
         mapGrid[x+y*mapSizeX].object = nil
     end
 end
+
+function drawMinimapObjects(minimapSize)
+    love.graphics.setShader()
+    for k, v in pairs(mapGrid) do
+        if v.decal or v.object or v.unit then
+            local x, y = math.mod(k, mapSizeX), math.floor(k/mapSizeX)
+            x, y = x/mapSizeX * minimapSize, y/mapSizeY * minimapSize
+            love.graphics.points(x, y)
+        end
+    end
+
+end

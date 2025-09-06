@@ -233,7 +233,7 @@ function loadTextures()
 
 	peasant_worker_col = love.graphics.newImage("textures/peasant_worker_col.png")
 	peasant_worker_nor = love.graphics.newImage("textures/peasant_worker_nor.png")
-	assets.peasant_worker = newUnit("textures/peasant_worker_col.json", peasant_worker_col, peasant_worker_nor)
+	assets.peasant_worker = newUnit("textures/peasant_worker_col.json", peasant_worker_col, peasant_worker_nor, "peasant_worker")
 end
 
 function initializeBuffers()
@@ -755,6 +755,7 @@ function love.draw()
 	love.graphics.draw(normalMap, 0, 0, 0, 1/normalMap:getWidth()*minimapSize)
 	love.graphics.setShader()
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
+	drawMinimapObjects(minimapSize)
 	love.graphics.draw(text_out)
 	--love.graphics.draw(hutSpritesheetNor, 0, 256)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
@@ -854,3 +855,25 @@ function cameraShaderTransform(x, y)
 	--terrainGeomShader:send("pos", {x , y })
 end
 
+function saveGame(name)
+	local mapList = {}
+	for k, v in pairs(mapGrid) do
+		local intX, intY = math.mod(k, mapSizeX), math.floor(k/mapSizeX)
+		local row = {}
+		row.intX = intX
+		row.intY = intY
+		if v.decal then
+			row.decal = {decalType = v.decal.decalType, rot = v.decal.rot}
+		end
+		if v.object then
+			row.object = {name = v.object.name, objectType = v.object.objectType, x=v.object.x, y=v.object.y, rot=v.object.rot, drowning = v.object.drowning, blockerList = v.object.blockerList}
+		end
+		if v.unit then
+			row.unit = {name = v.unit.name, x=v.unit.x, y=v.unit.y, rot=v.unit.rot}
+		end
+		if row.decal or row.object or row.unit then
+			table.insert(mapList, row)
+		end
+	end
+	love.filesystem.write(string.format("%s_objectlist.json", name), json.encode(mapList))
+end

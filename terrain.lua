@@ -187,7 +187,7 @@ function placeSoil(x1, y1, x2, y2)
 			local chunkY = math.ceil(j/chunkSize)
 			local varX = math.random() * 0.2 - 0.1
 			local varY = math.random() * 0.2 - 0.1
-			addPlant({name = "cornSprite", image=assets.cornSprite.sprite, height=getTerrainHeight(i, j), normalmap=assets.cornSprite.normalmap, Nangles = assets.cornSprite.Nangles, Nmoisture = assets.cornSprite.Nmoisture}, i+varX, j+varY, rot, true)
+			addPlant({name = "cornSprite", image=assets.cornSprite.sprite, height=getTerrainHeight(i, j), normalmap=assets.cornSprite.normalmap, Nangles = assets.cornSprite.Nangles, Nmoisture = assets.cornSprite.Nmoisture}, i+varX, j+varY, rot)
 		end
 	end
 

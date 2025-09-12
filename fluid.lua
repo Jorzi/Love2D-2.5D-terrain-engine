@@ -114,7 +114,11 @@ end
 
 function reloadFluid(fluid)
     local img = love.graphics.newImage(fluid.fluidData)
+    love.graphics.setBlendMode('replace', 'premultiplied')
 	love.graphics.setCanvas(fluid.fluidLayer)
 	love.graphics.draw(img)
+    love.graphics.setCanvas(fluid.tmpBuffer)
+    love.graphics.draw(img)
 	love.graphics.setCanvas()
+    love.graphics.setBlendMode("alpha") 
 end

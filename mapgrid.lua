@@ -51,14 +51,9 @@ function addUnit(unit, x, y, rot)
 	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].unit = {unit = unit, x=x, y=y, rot=rot}
 end
 
-function addPlant(plant, x, y, rot, walkable, blockerList)
+function addPlant(plant, x, y, rot, blockerList)
     x, y = checkTile(x, y)
 	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = plant.name, drawable = plant.image, normalmap = plant.normalmap, Nangles = plant.Nangles, Nmoisture = plant.Nmoisture, objectType = "plant", height = plant.height, x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
-    if walkable then
-        mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
-    else
-        mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "walk", originX = math.floor(x), originY = math.floor(y)}
-    end
     if blockerList then
         for k, v in pairs(blockerList) do
             mapGrid[math.floor(x)+v[1]+(math.floor(y)+v[2])*mapSizeX].blocker = {blockerType = v[3], originX = math.floor(x), originY = math.floor(y)}

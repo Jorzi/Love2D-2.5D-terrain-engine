@@ -398,13 +398,13 @@ function generateRandomTrees(n)
 		local rot = math.random() * 2 * math.pi
 		if i % 3 == 0 then
 			--addPlant({image=voxelbirch, height=getTerrainHeight(x, y), normalmap=birch1_nor}, x, y, rot, false)
-			addPlant({name = "birchSprite", image=assets.birchSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.birchSprite.normalmap, Nangles = assets.birchSprite.Nangles, Nmoisture = assets.birchSprite.Nmoisture}, x, y, rot, false)
+			addPlant({name = "birchSprite", image=assets.birchSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.birchSprite.normalmap, Nangles = assets.birchSprite.Nangles, Nmoisture = assets.birchSprite.Nmoisture}, x, y, rot)
 		elseif i % 3 == 1 then
 			--addPlant({image=voxelpine, height=getTerrainHeight(x, y), normalmap=pine1_nor}, x, y, rot, false)
-			addPlant({name = "pineSprite", image=assets.pineSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.pineSprite.normalmap, Nangles = assets.pineSprite.Nangles, Nmoisture = assets.pineSprite.Nmoisture}, x, y, rot, false)
+			addPlant({name = "pineSprite", image=assets.pineSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.pineSprite.normalmap, Nangles = assets.pineSprite.Nangles, Nmoisture = assets.pineSprite.Nmoisture}, x, y, rot)
 		else
 			--addPlant({image=voxelbush, height=getTerrainHeight(x, y), normalmap=bush1_nor}, x, y, rot, true)
-			addPlant({name = "bushSprite", image=assets.bushSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.bushSprite.normalmap, Nangles = assets.bushSprite.Nangles, Nmoisture = assets.bushSprite.Nmoisture}, x, y, rot, false)
+			addPlant({name = "bushSprite", image=assets.bushSprite.sprite, height=getTerrainHeight(x, y), normalmap=assets.bushSprite.normalmap, Nangles = assets.bushSprite.Nangles, Nmoisture = assets.bushSprite.Nmoisture}, x, y, rot)
 		end
 		--addUnit(peasant_worker, x, y, rot)
 	end
@@ -876,4 +876,53 @@ function saveGame(name)
 		end
 	end
 	love.filesystem.write(string.format("%s_objectlist.json", name), json.encode(mapList))
+	love.filesystem.write(string.format("%s_fluiddata", name), fluidSim.fluidData:getString())
+	love.filesystem.write(string.format("%s_heightdata", name), heightData:getString())
+	love.filesystem.write(string.format("%s_soildata", name), soilData:getString())
+	love.filesystem.write(string.format("%s_sourcesinks.json", name), json.encode(fluidSim.sourceSinks))
+	love.filesystem.write(string.format("%s.save", name), "")
+end
+
+function loadGame(name)
+	--local dir = love.filesystem.getSaveDirectory()
+	local data = love.filesystem.read(string.format("%s_heightdata", name))
+	local width, height = heightData:getDimensions()
+	heightData = love.image.newImageData(width, height, heightData:getFormat(), data)
+
+	data = love.filesystem.read(string.format("%s_soildata", name))
+	width, height = soilData:getDimensions()
+	soilData = love.image.newImageData(width, height, soilData:getFormat(), data)
+
+	data = love.filesystem.read(string.format("%s_fluiddata", name))
+	width, height = fluidSim.fluidData:getDimensions()
+	fluidSim.fluidData = love.image.newImageData(width, height, fluidSim.fluidData:getFormat(), data)
+
+	initializeBuffers()
+	fluidSim.sourceSinks = json.decode(love.filesystem.read(string.format("%s_sourcesinks.json", name)))
+	local contents = love.filesystem.read(string.format("%s_objectlist.json", name))
+	local mapList = json.decode(contents)
+	initializeMapGrid()
+	for k, v in ipairs(mapList) do
+		if v.decal then
+			if v.decal.decalType == "road" then
+				addRoad(v.intX, v.intY)
+			end
+		end
+		if v.object then
+			if v.object.objectType == "plant" then
+				local assetName = v.object.name
+				local plant = {name = assetName, image=assets[assetName].sprite, height=getTerrainHeight(v.object.x, v.object.y), normalmap=assets[assetName].normalmap, Nangles = assets[assetName].Nangles, Nmoisture = assets[assetName].Nmoisture}
+				addPlant(plant, v.object.x, v.object.y, v.object.rot, v.object.blockerList)
+			else if v.object.objectType == "building" then
+				local assetName = v.object.name
+				local building = {name = assetName, image=assets[assetName].sprite, height=getTerrainHeight(v.object.x, v.object.y), normalmap=assets[assetName].normalmap, Nangles = assets[assetName].Nangles, Nmoisture = assets[assetName].Nmoisture}
+				addBuilding(building, v.object.x, v.object.y, v.object.rot)
+			end
+		end
+		if v.unit then
+			local unit = assets[v.unit.name]
+			addUnit(unit, v.unit.x, v.unit.y, v.unit.rot)
+		end
+	end
+end
 end

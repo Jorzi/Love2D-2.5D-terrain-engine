@@ -102,10 +102,18 @@ function drawMinimapObjects(minimapSize)
     love.graphics.setShader()
     for k, v in pairs(mapGrid) do
         if v.decal or v.object or v.unit then
+            love.graphics.setColor(1,1,1,1)
+            if v.object and v.object.objectType == "plant" then
+                love.graphics.setColor(0.15, 0.2, 0.05, 1)
+                if v.object.name == "cornSprite" then
+                    love.graphics.setColor(0.8, 0.65, 0.15, 1)
+                end
+            end
             local x, y = math.mod(k, mapSizeX), math.floor(k/mapSizeX)
             x, y = x/mapSizeX * minimapSize, y/mapSizeY * minimapSize
             love.graphics.points(x, y)
         end
     end
+    love.graphics.setColor(1,1,1,1)
 
 end

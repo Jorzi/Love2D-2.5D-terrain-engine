@@ -530,6 +530,7 @@ function love.wheelmoved(x, y)
 end
 
 function love.keypressed(key, scancode, isrepeat)
+	luis.keypressed(key, scancode, isrepeat)
 	if key == "t" then
 		editState.toolStrength = editState.toolStrength + 1
 	end
@@ -567,11 +568,10 @@ function love.keypressed(key, scancode, isrepeat)
 	if key == "8" then
 		editState.activeTool = 'place_unit'
 	end
-	luis.keypressed(key)
 end
 
-function love.keyreleased(key)
-
+function love.keyreleased(key, scancode)
+	luis.keyreleased( key, scancode )
 end
 
 function love.resize(w, h)
@@ -925,4 +925,8 @@ function loadGame(name)
 		end
 	end
 end
+end
+
+function love.textinput(text)
+    luis.textinput(text)
 end

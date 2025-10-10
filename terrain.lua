@@ -293,3 +293,24 @@ function maxValueMipMap(image)
 		love.graphics.draw(image)
 	end
 end
+
+function delete_brush(x, y, size)
+	x = clamp(x, 0, heightData:getWidth()-1)
+	y = clamp(y, 0, heightData:getHeight()-1)
+	local centerX = x
+	local centerY = y
+	local x1 = x - (size-1)
+	local x2 = x + (size-1)
+	local y1 = y - (size-1)
+	local y2 = y + (size-1)
+	x1 = clamp(x1, 0, heightData:getWidth()-1)
+	x2 = clamp(x2, 0, heightData:getWidth()-1)
+	y1 = clamp(y1, 0, heightData:getHeight()-1)
+	y2 = clamp(y2, 0, heightData:getHeight()-1)
+	for i = x1, x2 do
+		for j = y1, y2 do
+			clearObject(i, j)
+			clearTile(i, j)
+		end
+	end
+end

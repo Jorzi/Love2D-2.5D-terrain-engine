@@ -448,6 +448,8 @@ function love.update(dt)
 			levelHeight_brush(cursorX, cursorY, editState.radius)
 		elseif editState.activeTool == "place_road" then
 			addRoad(cursorX, cursorY)
+		elseif editState.activeTool == "delete_brush" then
+			delete_brush(cursorX, cursorY, editState.radius)
 		end
 	end	
 	text_out:set(string.format("Rot: %.3f rad, FPS = %d, cursor = %d, %d, r/f: raise/lower water, t/g: increase/decrease tool strength", camera.rot, love.timer.getFPS( ), cursorX, cursorY))

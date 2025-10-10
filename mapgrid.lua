@@ -91,8 +91,10 @@ end
 
 function clearObject(x, y)
     if getObject(x, y) then
-        for k, v in pairs(getObject(x, y).blockerList) do
-            mapGrid[x+v[1]+(y+v[2])*mapSizeX].blocker = nil
+        if getObject(x, y).blockerList then
+            for k, v in pairs(getObject(x, y).blockerList) do
+                mapGrid[x+v[1]+(y+v[2])*mapSizeX].blocker = nil
+            end
         end
         mapGrid[x+y*mapSizeX].object = nil
     end

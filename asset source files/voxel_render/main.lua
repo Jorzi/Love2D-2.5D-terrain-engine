@@ -53,9 +53,11 @@ function love.load()
         7, 6, 2
     }
 
-    cube = love.graphics.newMesh(vertexformat, vertices)
+    cube = love.graphics.newMesh(vertexformat, vertices, "triangles", "static")
     cube:setVertexMap(vertexMap)
     rot = 0;
+	testGridTex = love.graphics.newImage("testgrid.png")
+	cube:setTexture(testGridTex)
 end
 
 function love.update(dt)
@@ -64,6 +66,7 @@ end
 
 function love.draw()
     love.graphics.setShader(voxelShader)
-    love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2, rot)
+	love.graphics.setMeshCullMode("front")
+    love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight(), rot)
     love.graphics.setShader()
 end

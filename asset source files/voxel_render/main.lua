@@ -1,40 +1,63 @@
 function love.load()
     voxelShader = love.graphics.newShader("voxel.glsl")
-    local vertexformat = {
+	images = {}
+	i=1
+	while true do
+		filename = string.format("temple_voxel_layers/%04d.png", i)
+		--io.write(filename)
+		if love.filesystem.isFile(filename) then
+			images[i] = filename
+			i = i + 1
+		else
+			break
+		end
+	end
+	numberOfLayers = i-1
+	volume = love.graphics.newVolumeImage(images)
+	cube = generateMeshCube(volume:getWidth(), volume:getHeight(), numberOfLayers)
+    rot = 0;
+	testGridTex = love.graphics.newImage("testgrid.png")
+	--cube:setTexture(testGridTex)
+
+	cube:setTexture(volume)
+end
+
+function generateMeshCube(width, depth, height)
+	local vertexformat = {
         {"VertexPosition", "float", 3}, -- The x,y position of each vertex.
         {"VertexTexCoord", "float", 3} -- The u,v texture coordinates of each vertex.
     }
     local vertices = {
 		{
-			-32, -32, 0, -- position of the vertex
+			-width/2, -depth/2, 0, -- position of the vertex
 			0, 0, 0 -- texture coordinate at the vertex position
 		},
 		{
-			32, -32, 0, -- position of the vertex
+			width/2, -depth/2, 0, -- position of the vertex
 			1, 0, 0 -- texture coordinate at the vertex position
 		},
 		{
-			32, 32, 0, -- position of the vertex
+			width/2, depth/2, 0, -- position of the vertex
 			1, 1, 0 -- texture coordinate at the vertex position
 		},
 		{
-			-32, 32, 0, -- position of the vertex
+			-width/2, depth/2, 0, -- position of the vertex
 			0, 1, 0 -- texture coordinate at the vertex position
 		},
         {
-			-32, -32, 64, -- position of the vertex
+			-width/2, -depth/2, height, -- position of the vertex
 			0, 0, 1 -- texture coordinate at the vertex position
 		},
 		{
-			32, -32, 64, -- position of the vertex
+			width/2, -depth/2, height, -- position of the vertex
 			1, 0, 1 -- texture coordinate at the vertex position
 		},
 		{
-			32, 32, 64, -- position of the vertex
+			width/2, depth/2, height, -- position of the vertex
 			1, 1, 1 -- texture coordinate at the vertex position
 		},
 		{
-			-32, 32, 64, -- position of the vertex
+			-width/2, depth/2, height, -- position of the vertex
 			0, 1, 1 -- texture coordinate at the vertex position
 		},
 	}
@@ -55,9 +78,7 @@ function love.load()
 
     cube = love.graphics.newMesh(vertexformat, vertices, "triangles", "static")
     cube:setVertexMap(vertexMap)
-    rot = 0;
-	testGridTex = love.graphics.newImage("testgrid.png")
-	cube:setTexture(testGridTex)
+	return cube
 end
 
 function love.update(dt)

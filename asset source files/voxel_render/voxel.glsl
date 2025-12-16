@@ -1,5 +1,15 @@
+uniform vec3 size;
+uniform VolumeImage volume;
+varying vec3 traverseVector; 
+
+float max3 (vec3 v) {
+  return max (max (v.x, v.y), v.z);
+}
+float min3 (vec3 v) {
+  return min (min (v.x, v.y), v.z);
+}
+
 #ifdef VERTEX
-varying vec4 traverseVector; 
 vec4 position( mat4 transform_projection, vec4 vertex_position )
 {
     vertex_position.z *= (1.0/32); // looks like Love2d handles the z coordinate a bit differently
@@ -14,7 +24,7 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
         0, -sinTheta, cosTheta, 0,
         0, 0, 0, 1
     );
-    traverseVector = rot60 * TransformMatrix * vec4(0, 0, -1, 0);
+    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rot60)) * vec3(0, 0, -1);
 	return (rot60 * ProjectionMatrix * vertex_position)*vec4(1, 1, 0.01, 1);
 }
 #endif
@@ -23,7 +33,18 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
 	//vec4 texturecolor = Texel(tex, texture_coords);
-    vec4 texturecolor = VaryingTexCoord;
-    return vec4(texturecolor.rgb, texturecolor.a);
+    float N = 0.5;
+    vec3 coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
+    vec4 texturecolor = Texel(volume, coords);
+    while(min3(coords) >= 0.0 && max3(coords) <= 1.0 ){
+        if(texturecolor.a > 0.5){
+            texturecolor.a = 1;
+            break;
+        }
+        N+=1;
+        coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
+        texturecolor = Texel(volume, coords);
+    }
+    return texturecolor;
 }
 #endif

@@ -1,12 +1,15 @@
 function love.load()
     voxelShader = love.graphics.newShader("voxel.glsl")
 	images = {}
+	images_nor = {}
 	i=1
 	while true do
-		filename = string.format("temple_voxel_layers/%04d.png", i)
+		filename = string.format("temple1/%04d.png", i)
+		filename_nor = string.format("temple1_nor/%04d.png", i)
 		--io.write(filename)
 		if love.filesystem.isFile(filename) then
 			images[i] = filename
+			images_nor[i] = filename_nor
 			i = i + 1
 		else
 			break
@@ -14,11 +17,15 @@ function love.load()
 	end
 	numberOfLayers = i-1
 	volume = love.graphics.newVolumeImage(images)
+	volume:setFilter("nearest")
+	volume_nor = love.graphics.newVolumeImage(images_nor)
+	volume_nor:setFilter("nearest")
 	cube = generateMeshCube(volume:getWidth(), volume:getHeight(), numberOfLayers)
     rot = 0;
 	testGridTex = love.graphics.newImage("testgrid.png")
 	--cube:setTexture(testGridTex)
-
+	voxelShader:send("volume", volume)
+	voxelShader:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
 	cube:setTexture(volume)
 end
 

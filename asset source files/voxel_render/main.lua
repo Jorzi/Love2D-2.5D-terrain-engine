@@ -20,11 +20,12 @@ function love.load()
 	volume:setFilter("nearest")
 	volume_nor = love.graphics.newVolumeImage(images_nor)
 	volume_nor:setFilter("nearest")
-	cube = generateMeshCube(volume:getWidth(), volume:getHeight(), numberOfLayers)
+	cube = generateMeshCube(volume:getWidth()*2, volume:getHeight()*2, numberOfLayers*2)
     rot = 0;
 	testGridTex = love.graphics.newImage("testgrid.png")
 	--cube:setTexture(testGridTex)
 	voxelShader:send("volume", volume)
+	voxelShader:send("volume_nor", volume_nor)
 	voxelShader:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
 	cube:setTexture(volume)
 end

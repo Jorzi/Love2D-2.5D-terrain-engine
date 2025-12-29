@@ -1,6 +1,7 @@
 uniform vec3 size;
 uniform VolumeImage volume;
 uniform VolumeImage volume_nor;
+uniform float viewAngle;
 varying vec3 traverseVector;
 varying vec3 lightDir;
 
@@ -14,21 +15,24 @@ float min3 (vec3 v) {
 #ifdef VERTEX
 vec4 position( mat4 transform_projection, vec4 vertex_position )
 {
-    vertex_position.z *= (1.0/32); // looks like Love2d handles the z coordinate a bit differently
-    vertex_position = TransformMatrix * vertex_position;
-    //vertex_position.y *= 0.5;
-	//vertex_position.y -= vertex_position.z*5;
-    float cosTheta = cos(radians(60.0));
-    float sinTheta = sin(radians(60.0));
+    mat4 scaleRotMat = mat4(mat3(TransformMatrix)); //separate out translation from matrix
+    vec4 translateVec = TransformMatrix[3];
+    vertex_position = scaleRotMat * vertex_position; //apply scale & rotation
+
+    float cosTheta = cos(viewAngle);
+    float sinTheta = sin(viewAngle);
     mat4 rot60 = mat4(
         1, 0, 0, 0,
         0, cosTheta, sinTheta, 0,
         0, -sinTheta, cosTheta, 0,
         0, 0, 0, 1
     );
-    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rot60)) * vec3(0, 0, -1);
-    lightDir = transpose(mat3(TransformMatrix)) * normalize(vec3(1,1,1));
-	return (rot60 * ProjectionMatrix * vertex_position)*vec4(1, 1, 0.01, 1);
+    vertex_position = rot60 * vertex_position; //additional rot by 60 deg for "isometric" perspective
+    vertex_position.xyz += translateVec.xyz; //apply translation
+    vertex_position = ProjectionMatrix * vertex_position; //apply projection
+    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rot60)) * vec3(0, 0, -1); //calculate view vector by inverse transforming a top-down vector
+    lightDir = transpose(mat3(TransformMatrix)) * normalize(vec3(1,1,1)); //inverse transform light
+	return (vertex_position )*vec4(1, 1, 0.01, 1);
 }
 #endif
 
@@ -51,6 +55,6 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
         texturecolor = Texel(volume, coords);
     }
     texturecolor.rgb = texturecolor.rgb * (max(0, dot(normal, lightDir))*0.7 + 0.3);
-    return texturecolor;
+    return mix(texturecolor, VaryingTexCoord, 0.2) ;
 }
 #endif

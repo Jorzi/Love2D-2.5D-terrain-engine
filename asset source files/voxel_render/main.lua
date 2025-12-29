@@ -28,6 +28,10 @@ function love.load()
 	voxelShader:send("volume_nor", volume_nor)
 	voxelShader:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
 	cube:setTexture(volume)
+
+	viewAngle = math.rad(60)
+	font = love.graphics.getFont()
+	text_out = love.graphics.newText(font)	
 end
 
 function generateMeshCube(width, depth, height)
@@ -91,11 +95,19 @@ end
 
 function love.update(dt)
     rot = rot + math.pi/180
+	if love.keyboard.isDown("r") then
+		viewAngle = viewAngle - math.rad(1)
+	elseif love.keyboard.isDown("f") then
+		viewAngle = viewAngle + math.rad(1)
+	end
+	voxelShader:send("viewAngle", viewAngle)
 end
 
 function love.draw()
     love.graphics.setShader(voxelShader)
 	love.graphics.setMeshCullMode("front")
-    love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight(), rot)
+    love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2 + 100, rot)
     love.graphics.setShader()
+	text_out:set(string.format("viewAngle: %.3f rad, FPS = %d r/f: change view angle", viewAngle, love.timer.getFPS( )))
+	love.graphics.draw(text_out)
 end

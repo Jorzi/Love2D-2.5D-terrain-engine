@@ -37,20 +37,35 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
 	//vec4 texturecolor = Texel(tex, texture_coords);
     float N = 0.5;
-    vec3 coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
+    //vec3 coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
+    vec3 coords = VaryingTexCoord.xyz;
     vec3 normal = vec3(0,0,1);
     vec4 texturecolor = Texel(volume, coords);
+    float lambertFactor = 1;
     while(min3(coords) >= 0.0 && max3(coords) <= 1.0 ){
         if(texturecolor.a > 0.5){
             texturecolor.a = 1;
             normal = Texel(volume_nor, coords).rgb * 2 - 1;
+            lambertFactor = max(0, dot(normal, lightDir));
+            if(lambertFactor > 0){
+                float alpha = 0;
+                coords += -traverseVector.xyz/size + lightDir.xyz/size;
+                while(min3(coords) >= 0.0 && max3(coords) <= 1.0 ){
+                    coords += lightDir.xyz/size;
+                    alpha = Texel(volume, coords).a;
+                    if(alpha > 0.5){
+                        lambertFactor = 0;
+                        break;
+                    }
+                }
+            }
             break;
         }
         N+=1;
-        coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
+        coords += traverseVector.xyz/size;
         texturecolor = Texel(volume, coords);
     }
-    texturecolor.rgb = texturecolor.rgb * (max(0, dot(normal, lightDir))*0.7 + 0.3);
+    texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.7 + 0.3);
     return texturecolor;
 }
 #endif

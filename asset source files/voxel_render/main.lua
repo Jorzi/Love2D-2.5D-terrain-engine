@@ -16,10 +16,14 @@ function love.load()
 		end
 	end
 	numberOfLayers = i-1
-	volume = love.graphics.newVolumeImage(images)
+	local settings = {}
+	settings.mipmaps = true
+	volume = love.graphics.newVolumeImage(images, settings)
 	volume:setFilter("nearest")
+	volume:setWrap("clamp")
 	volume_nor = love.graphics.newVolumeImage(images_nor)
 	volume_nor:setFilter("nearest")
+	volume_nor:setWrap("clamp")
 	cube = generateMeshCube(volume:getWidth()*2, volume:getHeight()*2, numberOfLayers*2)
     rot = 0;
 	testGridTex = love.graphics.newImage("testgrid.png")
@@ -106,8 +110,11 @@ end
 function love.draw()
     love.graphics.setShader(voxelShader)
 	love.graphics.setMeshCullMode("front")
-    love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2 + 100, rot)
+	for i = 1,1 do
+    	love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2 + 100, rot+i)
+	end
     love.graphics.setShader()
 	text_out:set(string.format("viewAngle: %.3f rad, FPS = %d r/f: change view angle", viewAngle, love.timer.getFPS( )))
+	text_out:add(string.format("Number of mipmap levels: %d", volume:getMipmapCount()), 0, 20)
 	love.graphics.draw(text_out)
 end

@@ -1,3 +1,4 @@
+#pragma language glsl3
 uniform vec3 size;
 uniform VolumeImage volume;
 uniform VolumeImage volume_nor;
@@ -44,10 +45,11 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     //vec3 coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
     vec3 coords = VaryingTexCoord.xyz;
     vec3 normal = vec3(0,0,1);
-    vec4 texturecolor = Texel(volume, coords);
+    float lod = 0;
+    vec4 texturecolor = textureLod(volume, coords, lod);
     float lambertFactor = 1;
     while(min3(coords) >= 0.0 && max3(coords) <= 1.0 ){
-        if(texturecolor.a > 0.5){
+        if(texturecolor.a > 0.1){
             texturecolor.a = 1;
             normal = Texel(volume_nor, coords).rgb * 2 - 1;
             lambertFactor = max(0, dot(normal, lightDir));
@@ -67,9 +69,10 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
         }
         N+=1;
         coords += traverseVector.xyz/size;
-        texturecolor = Texel(volume, coords);
+        texturecolor = textureLod(volume, coords, lod);
     }
     texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.7 + 0.3);
-    return mix(texturecolor, VaryingTexCoord, 0.2) ;
+    //return mix(texturecolor, VaryingTexCoord, 0.2);
+    return texturecolor;
 }
 #endif

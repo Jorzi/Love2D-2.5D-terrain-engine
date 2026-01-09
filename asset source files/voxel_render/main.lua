@@ -110,7 +110,7 @@ end
 function love.draw()
     love.graphics.setShader(voxelShader)
 	love.graphics.setMeshCullMode("front")
-	for i = 1,1 do
+	for i = 1,50 do
     	love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2 + 100, rot+i)
 	end
     love.graphics.setShader()

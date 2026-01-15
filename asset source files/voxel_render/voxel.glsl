@@ -2,6 +2,7 @@
 uniform vec3 size;
 uniform VolumeImage volume;
 uniform VolumeImage volume_nor;
+uniform VolumeImage volume_ao;
 uniform float viewAngle;
 varying vec3 traverseVector;
 varying vec3 lightDir;
@@ -63,6 +64,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     //vec3 coords = VaryingTexCoord.xyz + N*traverseVector.xyz/size;
     vec3 coords = VaryingTexCoord.xyz;
     vec3 normal = vec3(0,0,1);
+    float AO = 1;
     float lod = 3;
     float maxLod = 5;
     vec4 texturecolor;
@@ -75,6 +77,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
         } else if(lod==0){
             texturecolor.a = 1;
             normal = Texel(volume_nor, coords).rgb * 2 - 1;
+            AO = Texel(volume_ao, coords).r;
             lambertFactor = max(0, dot(normal, lightDir));
             if(lambertFactor > 0){
                 coords += -traverseVector.xyz/size + lightDir.xyz/size;
@@ -89,7 +92,8 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
             }
         }
     }
-    texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.7 + 0.3);
+    AO = clamp(AO*2, 0, 1);
+    texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.5 + AO*0.5);
     //return mix(texturecolor, VaryingTexCoord, 0.2);
     return texturecolor;
 }

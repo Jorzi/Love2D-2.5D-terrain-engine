@@ -73,7 +73,9 @@ function generateVoxelNormals(volume)
 end
 
 function generateVoxelAO(volume)
+	local filter = volume:getFilter()
 	volume:setWrap("clampzero")
+	volume:setFilter("linear")
 	local sliceCanvas = love.graphics.newCanvas(volume:getWidth(), volume:getHeight(), {format="rgba8"})
 	local voxelAO = love.graphics.newShader("voxel_ao.glsl")
 	voxelAO:send("volume", volume)
@@ -99,6 +101,7 @@ function generateVoxelAO(volume)
 		data = sliceCanvas:newImageData()
 		images[i] = data
 	end
+	volume:setFilter(filter)
 	return love.graphics.newVolumeImage(images)
 end
 

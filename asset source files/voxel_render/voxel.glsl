@@ -74,6 +74,10 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
         if(texturecolor.a == 0){
             lod = min(lod+1, maxLod);
             coords += pow(2, lod) * traverseVector.xyz/size;
+            while(lod > 0 && (min3(coords) < 0.0 || max3(coords) > 1.0 )){
+                lod -=1;
+                coords -= pow(2, lod) * traverseVector.xyz/size;
+            }
         } else if(lod==0){
             texturecolor.a = 1;
             normal = Texel(volume_nor, coords).rgb * 2 - 1;

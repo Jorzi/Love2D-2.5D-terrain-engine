@@ -236,6 +236,20 @@ function loadTextures()
 	assets.peasant_worker = newUnit("textures/peasant_worker_col.json", peasant_worker_col, peasant_worker_nor, "peasant_worker")
 end
 
+--asset = {width, height, type, drawable}
+function generateDynamicSpritesheet(assets)
+	local binpack_new = require('binpack')
+	local bp = binpack_new(2048, 2048)
+	local assetList = {}
+	for k, v in pairs(assets) do
+		assetList.k = {}
+		for i = 1, v.angles do
+			assetList.k.rects = {}
+			assetList.k.rects[i] = bp:insert(v.width, v.height)
+		end
+	end
+end
+
 function initializeBuffers()
 	local img = love.graphics.newImage(heightData)
 	love.graphics.setColor(1,1,1,1)

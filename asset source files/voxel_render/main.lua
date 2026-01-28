@@ -1,15 +1,15 @@
 function love.load()
     voxelShader = love.graphics.newShader("voxel.glsl")
 	images = {}
-	images_nor = {}
+	--images_nor = {}
 	i=1
 	while true do
-		filename = string.format("temple1/%04d.png", i)
-		filename_nor = string.format("temple1_nor/%04d.png", i)
+		filename = string.format("pine1/%04d.png", i)
+		--filename_nor = string.format("temple1_nor/%04d.png", i)
 		--io.write(filename)
 		if love.filesystem.isFile(filename) then
 			images[i] = filename
-			images_nor[i] = filename_nor
+			--images_nor[i] = filename_nor
 			i = i + 1
 		else
 			break
@@ -28,7 +28,8 @@ function love.load()
 	volume_ao = generateVoxelAO(volume)
 	volume_ao:setFilter("nearest")
 	volume_ao:setWrap("clamp")
-	cube = generateMeshCube(volume:getWidth()*2, volume:getHeight()*2, numberOfLayers*2)
+	cubeScale = 3
+	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, numberOfLayers*cubeScale)
     rot = 0;
 	testGridTex = love.graphics.newImage("testgrid.png")
 	--cube:setTexture(testGridTex)

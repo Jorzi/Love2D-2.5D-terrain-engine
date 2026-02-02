@@ -19,7 +19,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     if(Texel(volume, coords).a == 0)discard; //don't calculate normals for empty voxels
 
     vec3 normal = vec3(0,0,0);
-    float limit = 2;
+    float limit = 3;
     float stepSize = 1;
     for(float x = -limit; x <= limit; x += stepSize){
         for(float y = -limit; y <= limit; y += stepSize){

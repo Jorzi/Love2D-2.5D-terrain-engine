@@ -4,7 +4,7 @@ function love.load()
 	--images_nor = {}
 	i=1
 	while true do
-		filename = string.format("pine1/%04d.png", i)
+		filename = string.format("test_scene/%04d.png", i)
 		--filename_nor = string.format("temple1_nor/%04d.png", i)
 		--io.write(filename)
 		if love.filesystem.isFile(filename) then
@@ -28,7 +28,7 @@ function love.load()
 	volume_ao = generateVoxelAO(volume)
 	volume_ao:setFilter("nearest")
 	volume_ao:setWrap("clamp")
-	cubeScale = 3
+	cubeScale = 1.5
 	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, numberOfLayers*cubeScale)
     rot = 0;
 	testGridTex = love.graphics.newImage("testgrid.png")
@@ -166,7 +166,7 @@ function generateMeshCube(width, depth, height)
 end
 
 function love.update(dt)
-    rot = rot + math.pi/180
+    rot = rot + math.pi/360
 	if love.keyboard.isDown("r") then
 		viewAngle = viewAngle - math.rad(1)
 	elseif love.keyboard.isDown("f") then

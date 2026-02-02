@@ -96,7 +96,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
             }
         }
     }
-    AO = clamp(AO*2, 0, 1);
+    AO = clamp(sqrt(AO)*1.5, 0, 1);
     texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.5 + AO*0.5);
     //return mix(texturecolor, VaryingTexCoord, 0.2);
     return texturecolor;

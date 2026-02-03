@@ -82,7 +82,7 @@ function generateVoxelAO(volume)
 	voxelAO:send("volume", volume)
 	local numberOfLayers = volume:getDepth()
 	voxelAO:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
-	voxelAO:send("maxLOD", 4)
+	--voxelAO:send("maxLOD", 4)
 	local vertices = {
 		{0,0,0,0},
 		{volume:getWidth(),0,1,0},

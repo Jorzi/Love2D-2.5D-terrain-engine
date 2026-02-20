@@ -32,7 +32,7 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
     vertex_position = rotView * vertex_position; //additional rotation for "isometric" perspective
     vertex_position.xyz += translateVec.xyz; //apply translation
     vertex_position = ProjectionMatrix * vertex_position; //apply projection
-    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rotView)) * vec3(0, 0, -1); //calculate view vector by inverse transforming a top-down vector
+    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rotView)) * vec3(0, 0, -0.7); //calculate view vector by inverse transforming a top-down vector
     lightDir = transpose(mat3(TransformMatrix)) * normalize(vec3(1,1,1)); //inverse transform light
 	return (vertex_position )*vec4(1, 1, 0.01, 1);
 }
@@ -84,7 +84,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
             AO = Texel(volume_ao, coords).r;
             lambertFactor = max(0, dot(normal, lightDir));
             if(lambertFactor > 0){
-                coords += -traverseVector.xyz/size + lightDir.xyz/size;
+                coords += normal.xyz/size + 5*lightDir.xyz/size; //shadow bias
                 lambertFactor = lambertFactor * shadowRay(coords, lightDir, maxLod);
             }
             

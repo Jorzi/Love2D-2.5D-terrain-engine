@@ -51,9 +51,9 @@ function addUnit(unit, x, y, rot)
 	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].unit = {unit = unit, x=x, y=y, rot=rot}
 end
 
-function addPlant(plant, x, y, rot, blockerList)
+function addPlant(name, x, y, rot, blockerList)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = plant.name, drawable = plant.image, normalmap = plant.normalmap, Nangles = plant.Nangles, Nmoisture = plant.Nmoisture, objectType = "plant", height = plant.height, x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "plant", height = getTerrainHeight(x, y), x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
     if blockerList then
         for k, v in pairs(blockerList) do
             mapGrid[math.floor(x)+v[1]+(math.floor(y)+v[2])*mapSizeX].blocker = {blockerType = v[3], originX = math.floor(x), originY = math.floor(y)}
@@ -61,9 +61,9 @@ function addPlant(plant, x, y, rot, blockerList)
     end
 end
 
-function addBuilding(building, x, y, rot, walkable)
+function addBuilding(name, x, y, rot, walkable)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = building.name, drawable = building.image, normalmap = building.normalmap, Nangles = building.Nangles, Nmoisture = building.Nmoisture, objectType = "building", height = building.height, x=x, y=y, rot=rot}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "building", height = getTerrainHeight(x, y), x=x, y=y, rot=rot}
     if walkable then
         mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
     else

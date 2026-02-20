@@ -28,10 +28,10 @@ function love.load()
 	volume_ao = generateVoxelAO(volume)
 	volume_ao:setFilter("nearest")
 	volume_ao:setWrap("clamp")
-	cubeScale = 1
+	cubeScale = 1.5
 	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, numberOfLayers*cubeScale)
     rot = 0;
-	testGridTex = love.graphics.newImage("testgrid.png")
+	--testGridTex = love.graphics.newImage("testgrid.png")
 	--cube:setTexture(testGridTex)
 	voxelShader:send("volume", volume)
 	voxelShader:send("volume_nor", volume_nor)

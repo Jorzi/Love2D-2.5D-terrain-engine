@@ -61,6 +61,22 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
             }
         }
     } */
+    vec3 normal = vec3(0,0,0);
+    float occlusionSum = 0;
+    for(float x = -1; x <= 1; x += 1){
+        for(float y = -1; y <= 1; y += 1){
+            for(float z = -1; z <= 1; z += 1){
+                vec3 offset = vec3(x, y, z);
+                if(offset != vec3(0,0,0)){
+                    float alpha = Texel(volume, coords + offset/size).a;
+                    occlusionSum += alpha;
+                    normal -= alpha * normalize(offset);
+                }
+            }
+        }
+    }
+    normal = normalize(normal);
+    coords += normal*occlusionSum/19/size;
     
     //create ray directions according to a cube shell
     float N = 2*limit + 1;

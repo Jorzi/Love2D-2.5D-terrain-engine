@@ -8,14 +8,23 @@ function initAssetList()
     voxelShader = love.graphics.newShader("asset source files/voxel_render/voxel.glsl")
     globalSpritebatchShader = love.graphics.newShader("global_spritebatch_object.glsl")
     globalSpritebatchShader:send("normalMap", assetList.lightBuffer)
+    spritestackToSpriteShadowShader = love.graphics.newShader("spritestack_to_sprite_shadow.glsl")
+    globalSpritebatchShadowShader = love.graphics.newShader("global_spritebatch_shadow.glsl")
+    --globalSpritebatchShader:send("cameraRot", camera.rot)
     screenObjectBuffer = love.graphics.newSpriteBatch(assetList.diffuseBuffer, 4000, "stream")
+    screenShadowBuffer = love.graphics.newSpriteBatch(assetList.lightBuffer, 4000, "stream")
+    --[[ local vertexFormat = {
+        {"VertexPosition", "float", 3},
+    }
+    screenObjectMesh = love.graphics.newMesh(vertexFormat, 4000, "triangles", "stream" )
+    screenObjectWorldPositions = {} ]]
 
     --assetList.palm1 = loadAssetSpritestack("textures/palm1.json", "textures/palm1.png", "textures/palm1_nor.png", 8, 4)
-	assetList.pine1 = loadAssetSpritestack("textures/pine1.json", "textures/pine1_transp.png", "textures/pine1_nor.png", 8, 1)
-	assetList.bush1 = loadAssetSpritestack("textures/bush1.json", "textures/bush1.png", "textures/bush1_nor.png", 8, 1)
+	assetList.pine1 = loadAssetSpritestack("textures/pine1.json", "textures/pine1_transp.png", "textures/pine1_nor.png", 8, 8)
+	assetList.bush1 = loadAssetSpritestack("textures/bush1.json", "textures/bush1.png", "textures/bush1_nor.png", 8, 8)
 	assetList.corn1 = loadAssetSpritestack("textures/corn1.json", "textures/corn1.png", "textures/corn1_nor.png", 16, 1)
-	assetList.birch1 = loadAssetSpritestack("textures/birch1.json", "textures/birch1.png", "textures/birch1_nor.png", 8, 1)
-	assetList.small_hut1 = loadAssetSpritestack("textures/small_hut1.json", "textures/small_hut1.png", "textures/small_hut1_nor.png", 4, 1)
+	assetList.birch1 = loadAssetSpritestack("textures/birch1.json", "textures/birch1.png", "textures/birch1_nor.png", 8, 8)
+	assetList.small_hut1 = loadAssetSpritestack("textures/small_hut1.json", "textures/small_hut1.png", "textures/small_hut1_nor.png", 8, 1)
     generateDynamicSpritesheet()
     redrawAssets()
 end
@@ -49,7 +58,7 @@ function generateDynamicSpritesheet()
                     local width, height, anchorX, anchorY = getDimensions(v.drawable, v.type, angle)
                     local rect = bp:insert(width, height)
                     --put all data as numerical indices directly in the list entry for faster drawing of quads
-                    local index = i + (j-1)*v.Nmoisture
+                    local index = i + (j-1)*v.Nangles
                     local Nsprites = v.Nangles * v.Nmoisture
                     v[index] = love.graphics.newQuad(rect.x, rect.y, width, height, assetList.diffuseBuffer)
                     v[index + Nsprites] = anchorX
@@ -84,26 +93,35 @@ function drawAsset(asset)
         if asset.type == "spritestack" then
             spritestackToSpriteShader:send("normalMap", asset.normalmap)
             spritestackToSpriteShader:send("cameraRot", camera.rot)
-            love.graphics.setCanvas({assetList.diffuseBuffer, assetList.lightBuffer})
             for i = 1, asset.Nangles do
                 for j = 1, asset.Nmoisture do
-                    local index = i + (j-1)*asset.Nmoisture
+                    local index = i + (j-1)*asset.Nangles
                     local Nsprites = asset.Nangles * asset.Nmoisture
                     spritestackToSpriteShader:send("objectRot", (i-1) * math.pi*2 / asset.Nangles)
                     spritestackToSpriteShader:send("humidity", math.pow(j/asset.Nmoisture, 2))
+                    spritestackToSpriteShadowShader:send("objectRot", (i-1) * math.pi*2 / asset.Nangles)
+                    spritestackToSpriteShadowShader:send("humidity", math.pow(j/asset.Nmoisture, 2))
                     local x, y, width, height = asset[index]:getViewport()
                     love.graphics.setShader()
                     love.graphics.setBlendMode("replace")
+                    love.graphics.setCanvas(assetList.diffuseBuffer)
                     love.graphics.setColor(0,0,0,0)
+                    love.graphics.rectangle("fill", x, y, width, height)
+                    love.graphics.setCanvas(assetList.lightBuffer)
+                    love.graphics.setColor(0,0,0,1)
                     love.graphics.rectangle("fill", x, y, width, height)
                     --Debug: draw frames of sprites
                     --love.graphics.setColor(0,0,0,1)
                     --love.graphics.rectangle("line", x, y, width, height)
                     love.graphics.setColor(1,1,1,1)
+                    love.graphics.setCanvas({assetList.diffuseBuffer, assetList.lightBuffer})
                     love.graphics.setShader(spritestackToSpriteShader)
                     love.graphics.setBlendMode("alpha")
                     x = x + asset[index + Nsprites] --X anchor
                     y = y + asset[index + 2*Nsprites] --Y anchor
+                    love.graphics.draw(asset.drawable, x, y) --draw sprite
+                    love.graphics.setShader(spritestackToSpriteShadowShader)
+                    love.graphics.setBlendMode("add")
                     love.graphics.draw(asset.drawable, x, y) --draw sprite
                 end
             end
@@ -134,8 +152,10 @@ end
 function getAssetSprite(name, angle, moisture)
     local asset = assetList[name]
     _, angle = math.modf(angle/(2*math.pi))
-    local index = 1 + math.floor(angle * asset.Nangles) + asset.Nangles*(math.max(math.ceil(moisture * asset.Nmoisture) - 1, 0))
+    local angleIndex = math.floor(angle * asset.Nangles)
+    local moistureIndex = math.max(math.ceil(moisture * asset.Nmoisture) - 1, 0)
+    local index = 1 + angleIndex + asset.Nangles*(moistureIndex)
     local Nsprites = asset.Nangles * asset.Nmoisture
-    --io.write(string.format("%f\n", index))
+    --io.write(string.format("%f, %f\n", angleIndex, moistureIndex))
     return asset[index], asset[index + Nsprites], asset[index + 2*Nsprites]
 end

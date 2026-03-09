@@ -14,6 +14,7 @@ love.filesystem.load("decal.lua")()
 love.filesystem.load("mapgrid.lua")()
 love.filesystem.load("gui.lua")()
 love.filesystem.load("assets.lua")()
+love.filesystem.load("customSpriteBatch.lua")()
 
 function love.load()
 	love.window.setMode(love.graphics.getWidth(), love.graphics.getHeight(),
@@ -251,6 +252,9 @@ function initializeBuffers()
 	dynamicSpriteShader:send("shadowmap", shadowMap)
 	dynamicSpriteShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
 	dynamicSpriteShader:send("geomBuffer", geomBuffer)
+	globalSpritebatchShader:send("shadowmap", shadowMap)
+	globalSpritebatchShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
+	globalSpritebatchShader:send("geomBuffer", geomBuffer)
 	gridSizeX = love.graphics.getWidth()
 	gridSizeY = love.graphics.getHeight() + 256 * mapGridScale / 2
 	screenGrid = generateScreenGridMesh(math.floor(gridSizeX * grid_density), math.floor(gridSizeY * grid_density))
@@ -468,6 +472,7 @@ function love.wheelmoved(x, y)
 	spriteShadowShader:send("cameraRot", camera.rot)
 	dynamicSpriteShader:send("cameraRot", camera.rot)
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
+	--globalSpritebatchShader:send("cameraRot", camera.rot)
 	decalShader:send("rot", camera.rot)
 	redrawAssets()
 end
@@ -534,6 +539,7 @@ function love.draw()
 	love.graphics.setCanvas(objectShadows)
 	love.graphics.clear(1,1,1,1)
 	love.graphics.setColor(1,1,1,1)
+	screenShadowBuffer:clear()
 	for i = minX, maxX do
 		for j = minY, maxY do
 			if(getObject(i, j)) then
@@ -553,6 +559,12 @@ function love.draw()
 				love.graphics.setBlendMode("alpha", "premultiplied")
 				love.graphics.draw(object.drawable, x, y) --draw sprite
 				love.graphics.setBlendMode("alpha") ]]
+				local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, getHumidity(fluidSim, object.x, object.y))
+				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
+				local angle = camera.rot + math.rad(45)
+				--angle = math.atan(math.tan(angle)*2)
+				local xRot, yRot = 2*anchorY * math.sin(angle) + anchorX * math.cos(angle), 2*anchorY * math.cos(angle) - anchorX * math.sin(angle)
+				screenShadowBuffer:add(sprite, x-xRot, 2*y-yRot, -angle, 1, 2)
 				spriteCount = spriteCount + 1
 
 			end
@@ -565,6 +577,8 @@ function love.draw()
 			end
 		end
 	end
+	love.graphics.setShader(globalSpritebatchShadowShader)
+	love.graphics.draw(screenShadowBuffer)
 
 	--draw terrain
 	love.graphics.setCanvas(geomBuffer)
@@ -636,6 +650,7 @@ function love.draw()
 			y = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local _, _, marginX, marginY = sprite:getViewport();
 			if x < 0-marginX or x > love.graphics.getWidth() + marginX or y < 0-marginY or y > love.graphics.getHeight() + marginY then return end
+			screenObjectBuffer:setColor(object.x/mapSizeX, object.y/mapSizeY, object.height/255, 1)
 			screenObjectBuffer:add(sprite, x-anchorX, y-anchorY)
 		end
 	end
@@ -700,7 +715,9 @@ function love.draw()
 
 	love.graphics.setShader(globalSpritebatchShader)
 	love.graphics.setColor(1,1,1,1)
+	love.graphics.setBlendMode("alpha", "premultiplied")
 	love.graphics.draw(screenObjectBuffer)
+	love.graphics.setBlendMode("alpha")
 	love.graphics.setShader()
 	
 	--overlays
@@ -714,7 +731,7 @@ function love.draw()
 	drawMinimapObjects(minimapSize)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	love.graphics.draw(assetList.diffuseBuffer, 0, 256, 0, 0.5)
+	love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)

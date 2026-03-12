@@ -66,7 +66,7 @@ function love.load()
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	minimapShader = love.graphics.newShader("minimap.glsl")
 	initializeBuffers()
-	generateRandomTrees(4000)
+	generateRandomTrees(40000)
 	loadGui()
 end
 
@@ -532,51 +532,78 @@ end
 function love.draw()
 	local spriteCount = 0
 	--define camera window
-	local screenRadius = 120
+	local cameraSizeX = 1/mapGridScale * gridSizeX/2
+	local cameraSizeY = 1/mapGridScale * gridSizeY
+	local screenRadius = math.ceil(math.sqrt(cameraSizeX*cameraSizeX*0.2 + cameraSizeY*cameraSizeY*0.2))
+	--screenRadius = 120
 	local minX, maxX = math.floor(camera.x)-screenRadius, math.floor(camera.x)+screenRadius
 	local minY, maxY = math.floor(camera.y)-screenRadius, math.floor(camera.y)+screenRadius
+	--update shadow and object sprite batches
+	screenShadowBuffer:clear()
+	screenObjectBuffer:clear()
+	local function drawObject(j, i)
+		if(getObject(j, i)) then
+			local object = getObject(j, i)
+			local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, getHumidity(fluidSim, object.x, object.y))
+			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
+			y_screen = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
+			local _, _, marginX, marginY = sprite:getViewport();
+			marginX = math.max(marginX, 2*marginY) --account for shadow rotation
+			if x < 0-marginX or x > love.graphics.getWidth() + marginX or y_screen < 0-marginY or y_screen > love.graphics.getHeight() + marginY then return end
+			screenObjectBuffer:setColor(object.x/mapSizeX, object.y/mapSizeY, object.height/255, 1)
+			screenObjectBuffer:add(sprite, x-anchorX, y_screen-anchorY)
+			--shadow
+			local angle = camera.rot + math.rad(45)
+			local xRot, yRot = 2*anchorY * math.sin(angle) + anchorX * math.cos(angle), 2*anchorY * math.cos(angle) - anchorX * math.sin(angle)
+			screenShadowBuffer:add(sprite, x-xRot, 2*y-yRot, -angle, 1, 2)
+			spriteCount = spriteCount + 1
+		end
+	end
+	local sector = math.floor(math.fmod(camera.rot, math.pi*2)/(math.pi*2) * 16)
+	local loopConditions = {}
+	loopConditions[0] = {i_start = maxX, j_start = minY, columnStep1 = {0, 1}, rowStep = {-1, 0}}
+	loopConditions[1] = {i_start = maxX, j_start = minY, columnStep1 = {-1, 0}, columnStep2 = {0, 1}, rowStep = {1, 1}}
+	loopConditions[2] = {i_start = maxX, j_start = minY, columnStep1 = {0, 1}, columnStep2 = {-1, 0}, rowStep = {-1, -1}}
+	loopConditions[3] = {i_start = maxX, j_start = minY, columnStep1 = {-1, 0}, rowStep = {0, 1}}
+	loopConditions[4] = {i_start = maxX, j_start = maxY, columnStep1 = {-1, 0}, rowStep = {0, -1}}
+	loopConditions[5] = {i_start = maxX, j_start = maxY, columnStep1 = {0, -1}, columnStep2 = {-1, 0}, rowStep = {-1, 1}}
+	loopConditions[6] = {i_start = maxX, j_start = maxY, columnStep1 = {-1, 0}, columnStep2 = {0, -1}, rowStep = {1, -1}}
+	loopConditions[7] = {i_start = maxX, j_start = maxY, columnStep1 = {0, -1}, rowStep = {-1, 0}}
+	loopConditions[8] = {i_start = minX, j_start = maxY, columnStep1 = {0, -1}, rowStep = {1, 0}}
+	loopConditions[9] = {i_start = minX, j_start = maxY, columnStep1 = {1, 0}, columnStep2 = {0, -1}, rowStep = {-1, -1}}
+	loopConditions[10] = {i_start = minX, j_start = maxY, columnStep1 = {0, -1}, columnStep2 = {1, 0}, rowStep = {1, 1}}
+	loopConditions[11] = {i_start = minX, j_start = maxY, columnStep1 = {1, 0}, rowStep = {0, -1}}
+	loopConditions[12] = {i_start = minX, j_start = minY, columnStep1 = {1, 0}, rowStep = {0, 1}}
+	loopConditions[13] = {i_start = minX, j_start = minY, columnStep1 = {0, 1}, columnStep2 = {1, 0}, rowStep = {1, -1}}
+	loopConditions[14] = {i_start = minX, j_start = minY, columnStep1 = {1, 0}, columnStep2 = {0, 1}, rowStep = {-1, 1}}
+	loopConditions[15] = {i_start = minX, j_start = minY, columnStep1 = {0, 1}, rowStep = {1, 0}}
+	local i_start, j_start, columnStep1, columnStep2, rowStep = loopConditions[sector].i_start, loopConditions[sector].j_start, loopConditions[sector].columnStep1, loopConditions[sector].columnStep2, loopConditions[sector].rowStep
+	while i_start >= minX and i_start <= maxX and j_start >= minY and j_start <= maxY do
+		i, j = i_start, j_start
+		while i >= minX and i <= maxX and j >= minY and j <= maxY do
+			drawObject(i, j)
+			--drawSprite(i, j)
+			i, j = i + rowStep[1], j + rowStep[2]
+		end
+		i_start, j_start = i_start + columnStep1[1], j_start + columnStep1[2]
+	end
+	if (columnStep2) then
+		i_start, j_start = i_start - columnStep1[1], j_start - columnStep1[2] -- back up one step
+		while i_start >= minX and i_start <= maxX and j_start >= minY and j_start <= maxY do
+			i, j = i_start, j_start
+			while i >= minX and i <= maxX and j >= minY and j <= maxY do
+				drawObject(i, j)
+				--drawSprite(i, j)
+				i, j = i + rowStep[1], j + rowStep[2]
+			end
+			i_start, j_start = i_start + columnStep2[1], j_start + columnStep2[2]
+		end
+	end
+	
 	--draw shadows
 	love.graphics.setCanvas(objectShadows)
 	love.graphics.clear(1,1,1,1)
 	love.graphics.setColor(1,1,1,1)
-	screenShadowBuffer:clear()
-	for i = minX, maxX do
-		for j = minY, maxY do
-			if(getObject(i, j)) then
-				local object = getObject(i, j)
-				--[[ love.graphics.setShader(spritestackShadowShader)
-				spritestackShadowShader:send("objectRot", object.rot)
-				spritestackShadowShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-				love.graphics.draw(object.object.image, x, y, 0, 1, 1, 0, 0) --draw sprite
-				spriteCount = spriteCount + 1 ]]
-				--[[ love.graphics.setShader(dynamicSpriteShadowShader)
-				dynamicSpriteShadowShader:send("objectRot", object.rot)
-				dynamicSpriteShadowShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-				dynamicSpriteShadowShader:send("Nangles", object.Nangles)
-				dynamicSpriteShadowShader:send("Nmoisture", object.Nmoisture)
-				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-				love.graphics.setBlendMode("alpha", "premultiplied")
-				love.graphics.draw(object.drawable, x, y) --draw sprite
-				love.graphics.setBlendMode("alpha") ]]
-				local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, getHumidity(fluidSim, object.x, object.y))
-				local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-				local angle = camera.rot + math.rad(45)
-				--angle = math.atan(math.tan(angle)*2)
-				local xRot, yRot = 2*anchorY * math.sin(angle) + anchorX * math.cos(angle), 2*anchorY * math.cos(angle) - anchorX * math.sin(angle)
-				screenShadowBuffer:add(sprite, x-xRot, 2*y-yRot, -angle, 1, 2)
-				spriteCount = spriteCount + 1
-
-			end
-			if getUnit(i, j) then
-				local unit = getUnit(i, j)
-				love.graphics.setShader(spriteShadowShader)
-				local x, y = spriteVertexTransform(unit.x, unit.y, camera.rot, camera.x, camera.y)
-				drawUnit(unit.unit, x, y, unit.rot+math.pi/4, camera.rot)
-				spriteCount = spriteCount + 1
-			end
-		end
-	end
 	love.graphics.setShader(globalSpritebatchShadowShader)
 	love.graphics.draw(screenShadowBuffer)
 
@@ -611,49 +638,6 @@ function love.draw()
 	love.graphics.setColor(1,1,1,1)
 
 	--draw objects
-	local function drawObject(j, i)
-		if(getObject(j, i)) then
-			--[[ local object = getObject(j, i)
-			love.graphics.setShader(spritestackShader)
-			love.graphics.setColor(1,1,1,1)
-			spritestackShader:send("objectRot", object.rot)
-			spritestackShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-			spritestackShader:send("objectWorldPos", {object.x/mapSizeX, object.y/mapSizeY, object.object.height/256})
-			spritestackShader:send("normalMap", object.object.normalmap)
-			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-			y = y - object.object.height * mapGridScale / 2 --displace current sprite according to its height value
-			local margin = 100
-			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
-			love.graphics.draw(object.object.image, x, y, 0, 1, 1, 0, 0) --draw sprite ]]
-
-			--[[ local object = getObject(j, i)
-			love.graphics.setShader(dynamicSpriteShader)
-			love.graphics.setColor(1,1,1,1)
-			dynamicSpriteShader:send("objectRot", object.rot)
-			dynamicSpriteShader:send("humidity", getHumidity(fluidSim, object.x, object.y))
-			dynamicSpriteShader:send("objectWorldPos", {object.x/mapSizeX, object.y/mapSizeY, object.height/256})
-			dynamicSpriteShader:send("normalMap", object.normalmap)
-			dynamicSpriteShader:send("Nangles", object.Nangles)
-			dynamicSpriteShader:send("Nmoisture", object.Nmoisture)
-			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-			y = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
-			local margin = 100
-			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
-			love.graphics.setBlendMode("alpha", "premultiplied")
-			love.graphics.draw(object.drawable, x, y) --draw sprite
-			love.graphics.setBlendMode("alpha") ]]
-
-			local object = getObject(j, i)
-			--io.write(string.format("%s %f, %f\n", object.name, object.rot, getHumidity(fluidSim, object.x, object.y)))
-			local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, getHumidity(fluidSim, object.x, object.y))
-			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
-			y = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
-			local _, _, marginX, marginY = sprite:getViewport();
-			if x < 0-marginX or x > love.graphics.getWidth() + marginX or y < 0-marginY or y > love.graphics.getHeight() + marginY then return end
-			screenObjectBuffer:setColor(object.x/mapSizeX, object.y/mapSizeY, object.height/255, 1)
-			screenObjectBuffer:add(sprite, x-anchorX, y-anchorY)
-		end
-	end
 	local function drawSprite(j, i)
 		if(getUnit(j, i)) then
 			local unit = getUnit(j, i)
@@ -670,48 +654,6 @@ function love.draw()
 			drawUnit(unit.unit, x, y, unit.rot, camera.rot) --draw sprite
 		end
 	end
-	screenObjectBuffer:clear()
-	local sector = math.floor(math.fmod(camera.rot, math.pi*2)/(math.pi*2) * 16)
-	local loopConditions = {}
-	loopConditions[0] = {i_start = maxX, j_start = minY, columnStep1 = {0, 1}, rowStep = {-1, 0}}
-	loopConditions[1] = {i_start = maxX, j_start = minY, columnStep1 = {-1, 0}, columnStep2 = {0, 1}, rowStep = {1, 1}}
-	loopConditions[2] = {i_start = maxX, j_start = minY, columnStep1 = {0, 1}, columnStep2 = {-1, 0}, rowStep = {-1, -1}}
-	loopConditions[3] = {i_start = maxX, j_start = minY, columnStep1 = {-1, 0}, rowStep = {0, 1}}
-	loopConditions[4] = {i_start = maxX, j_start = maxY, columnStep1 = {-1, 0}, rowStep = {0, -1}}
-	loopConditions[5] = {i_start = maxX, j_start = maxY, columnStep1 = {0, -1}, columnStep2 = {-1, 0}, rowStep = {-1, 1}}
-	loopConditions[6] = {i_start = maxX, j_start = maxY, columnStep1 = {-1, 0}, columnStep2 = {0, -1}, rowStep = {1, -1}}
-	loopConditions[7] = {i_start = maxX, j_start = maxY, columnStep1 = {0, -1}, rowStep = {-1, 0}}
-	loopConditions[8] = {i_start = minX, j_start = maxY, columnStep1 = {0, -1}, rowStep = {1, 0}}
-	loopConditions[9] = {i_start = minX, j_start = maxY, columnStep1 = {1, 0}, columnStep2 = {0, -1}, rowStep = {-1, -1}}
-	loopConditions[10] = {i_start = minX, j_start = maxY, columnStep1 = {0, -1}, columnStep2 = {1, 0}, rowStep = {1, 1}}
-	loopConditions[11] = {i_start = minX, j_start = maxY, columnStep1 = {1, 0}, rowStep = {0, -1}}
-	loopConditions[12] = {i_start = minX, j_start = minY, columnStep1 = {1, 0}, rowStep = {0, 1}}
-	loopConditions[13] = {i_start = minX, j_start = minY, columnStep1 = {0, 1}, columnStep2 = {1, 0}, rowStep = {1, -1}}
-	loopConditions[14] = {i_start = minX, j_start = minY, columnStep1 = {1, 0}, columnStep2 = {0, 1}, rowStep = {-1, 1}}
-	loopConditions[15] = {i_start = minX, j_start = minY, columnStep1 = {0, 1}, rowStep = {1, 0}}
-	local i_start, j_start, columnStep1, columnStep2, rowStep = loopConditions[sector].i_start, loopConditions[sector].j_start, loopConditions[sector].columnStep1, loopConditions[sector].columnStep2, loopConditions[sector].rowStep
-	while i_start >= minX and i_start <= maxX and j_start >= minY and j_start <= maxY do
-		i, j = i_start, j_start
-		while i >= minX and i <= maxX and j >= minY and j <= maxY do
-			drawObject(i, j)
-			drawSprite(i, j)
-			i, j = i + rowStep[1], j + rowStep[2]
-		end
-		i_start, j_start = i_start + columnStep1[1], j_start + columnStep1[2]
-	end
-	if (columnStep2) then
-		i_start, j_start = i_start - columnStep1[1], j_start - columnStep1[2] -- back up one step
-		while i_start >= minX and i_start <= maxX and j_start >= minY and j_start <= maxY do
-			i, j = i_start, j_start
-			while i >= minX and i <= maxX and j >= minY and j <= maxY do
-				drawObject(i, j)
-				drawSprite(i, j)
-				i, j = i + rowStep[1], j + rowStep[2]
-			end
-			i_start, j_start = i_start + columnStep2[1], j_start + columnStep2[2]
-		end
-	end
-	
 
 	love.graphics.setShader(globalSpritebatchShader)
 	love.graphics.setColor(1,1,1,1)
@@ -731,7 +673,7 @@ function love.draw()
 	drawMinimapObjects(minimapSize)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
+	--love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)

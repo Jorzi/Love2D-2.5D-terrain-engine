@@ -161,10 +161,10 @@ function setHeight_rect(x1, y1, x2, y2, targetHeight)
 end
 
 function placeSoil(x1, y1, x2, y2)
-	x1 = clamp(x1, 0, heightData:getWidth()-1)
-	x2 = clamp(x2, 0, heightData:getWidth()-1)
-	y1 = clamp(y1, 0, heightData:getHeight()-1)
-	y2 = clamp(y2, 0, heightData:getHeight()-1)
+	x1 = clamp(x1, 1, heightData:getWidth()-1)
+	x2 = clamp(x2, 1, heightData:getWidth()-1)
+	y1 = clamp(y1, 1, heightData:getHeight()-1)
+	y2 = clamp(y2, 1, heightData:getHeight()-1)
 	local function setValue(x,y, r,g,b,a)
 		r = 1
 		return r,g,b,a

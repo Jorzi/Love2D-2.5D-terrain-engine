@@ -53,7 +53,7 @@ end
 
 function addPlant(name, x, y, rot, blockerList)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "plant", height = getTerrainHeight(x, y), x=x, y=y, rot=rot, drowning = 0, blockerList = blockerList}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "plant", height = getTerrainHeight(x, y), x=x, y=y, rot=rot, drowning = 0, humidity = 1, blockerList = blockerList}
     if blockerList then
         for k, v in pairs(blockerList) do
             mapGrid[math.floor(x)+v[1]+(math.floor(y)+v[2])*mapSizeX].blocker = {blockerType = v[3], originX = math.floor(x), originY = math.floor(y)}
@@ -63,7 +63,7 @@ end
 
 function addBuilding(name, x, y, rot, walkable)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "building", height = getTerrainHeight(x, y), x=x, y=y, rot=rot}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "building", height = getTerrainHeight(x, y), x=x, y=y, rot=rot, humidity = 1}
     if walkable then
         mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
     else
@@ -75,11 +75,14 @@ function updatePlants (dt)
     local Nframes = 10 --distribute updates over N frames to reduce load
     local n = love.frame%Nframes
     local index = 0;
+    local fluidData = fluidSim.fluidData
     for k, v in pairs(mapGrid) do
         if v.object and v.object.objectType == "plant" then
             index = (index+1)%Nframes
             if index == n then
-                v.object.drowning = math.max(0, v.object.drowning + (getFluidDepth(fluidSim, v.object.x, v.object.y)*255-0.1)*Nframes)
+                local waterLevel, _, _, humidity = fluidData:getPixel(v.object.x, v.object.y)
+                v.object.humidity = humidity
+                v.object.drowning = math.max(0, v.object.drowning + (waterLevel*255-0.1)*Nframes)
                 if v.object.drowning >= 256 then
                     v.object = nil
                     v.blocker = nil

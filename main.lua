@@ -66,7 +66,7 @@ function love.load()
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	minimapShader = love.graphics.newShader("minimap.glsl")
 	initializeBuffers()
-	generateRandomTrees(40000)
+	generateRandomTrees(10000)
 	loadGui()
 end
 
@@ -412,6 +412,7 @@ function love.update(dt)
 	love.frame = love.frame + 1
 	--[[ if love.frame%100 == 0 then
 		love.report = love.profiler.report(20)
+		io.write(love.report)
 		love.profiler.reset()
 	end ]]
 	luis.update(dt)
@@ -538,13 +539,14 @@ function love.draw()
 	--screenRadius = 120
 	local minX, maxX = math.floor(camera.x)-screenRadius, math.floor(camera.x)+screenRadius
 	local minY, maxY = math.floor(camera.y)-screenRadius, math.floor(camera.y)+screenRadius
+	local fluidData = fluidSim.fluidData
 	--update shadow and object sprite batches
 	screenShadowBuffer:clear()
 	screenObjectBuffer:clear()
 	local function drawObject(j, i)
 		if(getObject(j, i)) then
 			local object = getObject(j, i)
-			local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, getHumidity(fluidSim, object.x, object.y))
+			local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, object.humidity)
 			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 			y_screen = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local _, _, marginX, marginY = sprite:getViewport();
@@ -671,6 +673,7 @@ function love.draw()
 	love.graphics.draw(normalMap, 0, 0, 0, 1/normalMap:getWidth()*minimapSize)
 	love.graphics.setShader()
 	drawMinimapObjects(minimapSize)
+	love.graphics.setColor(1,1,1,1)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
 	--love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)

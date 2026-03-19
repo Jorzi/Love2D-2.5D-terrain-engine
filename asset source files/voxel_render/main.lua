@@ -2,7 +2,7 @@ function love.load()
     voxelShader = love.graphics.newShader("voxel.glsl")
 	images = {}
 	--images_nor = {}
-	i=1
+	--[[ i=1
 	while true do
 		filename = string.format("test_scene/%04d.png", i)
 		--filename_nor = string.format("temple1_nor/%04d.png", i)
@@ -18,7 +18,9 @@ function love.load()
 	numberOfLayers = i-1
 	local settings = {}
 	settings.mipmaps = true
-	volume = love.graphics.newVolumeImage(images, settings)
+	volume = love.graphics.newVolumeImage(images, settings) ]]
+	Vox_model   = require("vox_model")
+	Vox_texture3D = require("vox_texture3d")
 	volume:setFilter("nearest")
 	volume:setWrap("clamp")
 	--volume_nor = love.graphics.newVolumeImage(images_nor)
@@ -43,6 +45,7 @@ function love.load()
 	font = love.graphics.getFont()
 	text_out = love.graphics.newText(font)	
 end
+
 
 function generateVoxelNormals(volume)
 	volume:setWrap("clampzero")

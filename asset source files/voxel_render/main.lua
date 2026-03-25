@@ -1,6 +1,6 @@
 function love.load()
     voxelShader = love.graphics.newShader("voxel.glsl")
-	images = {}
+	--images = {}
 	--images_nor = {}
 	--[[ i=1
 	while true do
@@ -21,6 +21,7 @@ function love.load()
 	volume = love.graphics.newVolumeImage(images, settings) ]]
 	Vox_model   = require("vox_model")
 	Vox_texture3D = require("vox_texture3d")
+	volume = newFromVox("dude1.vox")
 	volume:setFilter("nearest")
 	volume:setWrap("clamp")
 	--volume_nor = love.graphics.newVolumeImage(images_nor)
@@ -30,15 +31,15 @@ function love.load()
 	volume_ao = generateVoxelAO(volume)
 	volume_ao:setFilter("nearest")
 	volume_ao:setWrap("clamp")
-	cubeScale = 1.5
-	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, numberOfLayers*cubeScale)
+	cubeScale = 5
+	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, volume:getDepth()*cubeScale)
     rot = 0;
 	--testGridTex = love.graphics.newImage("testgrid.png")
 	--cube:setTexture(testGridTex)
 	voxelShader:send("volume", volume)
 	voxelShader:send("volume_nor", volume_nor)
 	voxelShader:send("volume_ao", volume_ao)
-	voxelShader:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
+	voxelShader:send("size", {volume:getWidth(), volume:getHeight(), volume:getDepth()})
 	cube:setTexture(volume)
 
 	viewAngle = math.rad(60)
@@ -46,6 +47,28 @@ function love.load()
 	text_out = love.graphics.newText(font)	
 end
 
+function newFromVox(path)
+   local file = love.filesystem.newFile(path)
+   file:open("r")
+		local model = Vox_model.new(file:read())
+	file:close()
+	--io.write(dump(model))
+	local texture = Vox_texture3D.new(model)
+   return texture
+end
+
+function dump(o)
+	if type(o) == 'table' then
+	   local s = '{ '
+	   for k,v in pairs(o) do
+		  if type(k) ~= 'number' then k = '"'..k..'"' end
+		  s = s .. '['..k..'] = ' .. dump(v) .. ','
+	   end
+	   return s .. '} '
+	else
+	   return tostring(o)
+	end
+end
 
 function generateVoxelNormals(volume)
 	volume:setWrap("clampzero")

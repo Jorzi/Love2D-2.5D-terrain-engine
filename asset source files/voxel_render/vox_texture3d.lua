@@ -1,12 +1,12 @@
-local vox_texture = {}
+local vox_texture3d = {}
 
 local function getPoints(model)
-  local points, len = {}, 0
+  local points = {}
   for _,voxel in ipairs(model.voxels) do
-    len = len + 1
     local color8 = model.palette[voxel[4]]
     local color = {color8[1]/255, color8[2]/255, color8[3]/255, color8[4]/255}
     local x,y,z = voxel[1], voxel[2], voxel[3]
+    if not points[z] then points[z] = {} end
     table.insert(points[z], {x + 0.5, y + 0.5, color[1], color[2], color[3], color[4]>0 and color[4] or 255}) -- r,g,b,a
   end
   return points
@@ -14,16 +14,8 @@ end
 
 
 -- model is a vox model parsed by vox_model.new(binaryString)
--- vox_texture.new returns a table with the following attributes:
---   {
---     sizeX = <the model sizeX>,
---     sizeY = <the model sizeY>,
---     sizeZ = <the model sizeZ>,
---     canvas = <a love2d canvas where the model has been "sliced and rasterized"
---   }
-
-function vox_texture.new(model)
-  local canvas = love.graphics.newCanvas(model.sizeX, model.sizeY, model.sizeZ, {TextureType='volume'})
+function vox_texture3d.new(model)
+  local canvas = love.graphics.newCanvas(model.sizeX, model.sizeY, model.sizeZ, {type='volume', mipmaps = 'auto'})
   local points = getPoints(model)
   for i = 1, model.sizeZ do
     love.graphics.setCanvas(canvas, i)
@@ -31,12 +23,7 @@ function vox_texture.new(model)
   end
   love.graphics.setCanvas()
 
-  return {
-    sizeX = model.sizeX,
-    sizeY = model.sizeY,
-    sizeZ = model.sizeZ,
-    canvas = canvas
-  }
+  return canvas
 end
 
-return vox_texture
+return vox_texture3d

@@ -32,7 +32,7 @@ vec4 position( mat4 transform_projection, vec4 vertex_position )
     vertex_position = rotView * vertex_position; //additional rotation for "isometric" perspective
     vertex_position.xyz += translateVec.xyz; //apply translation
     vertex_position = ProjectionMatrix * vertex_position; //apply projection
-    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rotView)) * vec3(0, 0, -0.7); //calculate view vector by inverse transforming a top-down vector
+    traverseVector = transpose(mat3(TransformMatrix)) * transpose(mat3(rotView)) * vec3(0, 0, -0.5); //calculate view vector by inverse transforming a top-down vector
     lightDir = transpose(mat3(TransformMatrix)) * normalize(vec3(1,1,1)); //inverse transform light
 	return (vertex_position )*vec4(1, 1, 0.01, 1);
 }

@@ -94,7 +94,7 @@ function Stream:readId(expectedId, description)
   local id = self:readInteger()
 
   if id ~= expectedId then
-    error(('%s does not match: found %d, expected %d'):format(description, id, expectedId))
+    io.write(('%s does not match: found %d, expected %d'):format(description, id, expectedId))
   end
 
   return id

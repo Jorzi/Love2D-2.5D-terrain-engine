@@ -24,21 +24,14 @@ function love.load()
 	volume = newFromVox("dude1.vox")
 	volume:setFilter("nearest")
 	volume:setWrap("clamp")
-	--volume_nor = love.graphics.newVolumeImage(images_nor)
-	volume_nor = generateVoxelNormals(volume)
+	volume_nor = generateVoxelNormalsAndAO(volume)
 	volume_nor:setFilter("nearest")
 	volume_nor:setWrap("clamp")
-	volume_ao = generateVoxelAO(volume)
-	volume_ao:setFilter("nearest")
-	volume_ao:setWrap("clamp")
 	cubeScale = 5
 	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, volume:getDepth()*cubeScale)
     rot = 0;
-	--testGridTex = love.graphics.newImage("testgrid.png")
-	--cube:setTexture(testGridTex)
 	voxelShader:send("volume", volume)
 	voxelShader:send("volume_nor", volume_nor)
-	voxelShader:send("volume_ao", volume_ao)
 	voxelShader:send("size", {volume:getWidth(), volume:getHeight(), volume:getDepth()})
 	cube:setTexture(volume)
 
@@ -103,7 +96,7 @@ function generateVoxelAO(volume)
 	local filter = volume:getFilter()
 	volume:setWrap("clampzero")
 	volume:setFilter("linear")
-	local sliceCanvas = love.graphics.newCanvas(volume:getWidth(), volume:getHeight(), {format="rgba8"})
+	local sliceCanvas = love.graphics.newCanvas(volume:getWidth(), volume:getHeight(), {format="r8"})
 	local voxelAO = love.graphics.newShader("voxel_ao.glsl")
 	voxelAO:send("volume", volume)
 	local numberOfLayers = volume:getDepth()
@@ -126,6 +119,38 @@ function generateVoxelAO(volume)
 		love.graphics.setCanvas()
 		love.graphics.setShader()
 		data = sliceCanvas:newImageData()
+		images[i] = data
+	end
+	volume:setFilter(filter)
+	return love.graphics.newVolumeImage(images)
+end
+
+function generateVoxelNormalsAndAO(volume)
+	local filter = volume:getFilter()
+	volume:setWrap("clampzero")
+	volume:setFilter("linear")
+	local normalMap = love.graphics.newCanvas(volume:getWidth(), volume:getHeight(), {format="rgba8"})
+	local volumeNormalsAO = love.graphics.newShader("volume_normals_ao.glsl")
+	volumeNormalsAO:send("volume", volume)
+	local numberOfLayers = volume:getDepth()
+	volumeNormalsAO:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
+	local vertices = {
+		{0,0,0,0},
+		{volume:getWidth(),0,1,0},
+		{volume:getWidth(),volume:getHeight(),1,1},
+		{0,volume:getHeight(),0,1},
+	}
+	local mesh = love.graphics.newMesh(vertices)
+	local images = {}
+	for i=1,numberOfLayers do
+		volumeNormalsAO:send("zcoord", (i-0.5)/numberOfLayers)
+		love.graphics.setCanvas(normalMap)
+		love.graphics.clear( )
+		love.graphics.setShader(volumeNormalsAO)
+		love.graphics.draw(mesh)
+		love.graphics.setCanvas()
+		love.graphics.setShader()
+		data = normalMap:newImageData()
 		images[i] = data
 	end
 	volume:setFilter(filter)

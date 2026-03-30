@@ -15,15 +15,20 @@ end
 
 -- model is a vox model parsed by vox_model.new(binaryString)
 function vox_texture3d.new(model)
-  local canvas = love.graphics.newCanvas(model.sizeX, model.sizeY, model.sizeZ, {type='volume', mipmaps = 'auto'})
+  local canvas = love.graphics.newCanvas(model.sizeX, model.sizeY)
   local points = getPoints(model)
+  local images = {}
   for i = 1, model.sizeZ do
-    love.graphics.setCanvas(canvas, i)
+    love.graphics.setCanvas(canvas)
+    love.graphics.clear()
     love.graphics.points(points[i-1])
+    love.graphics.setCanvas()
+    images[i] = canvas:newImageData()
   end
-  love.graphics.setCanvas()
-
-  return canvas
+  local settings = {}
+	settings.mipmaps = true
+	local volume = love.graphics.newVolumeImage(images, settings)
+  return volume
 end
 
 return vox_texture3d

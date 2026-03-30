@@ -80,8 +80,9 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
             }
         } else if(lod==0){
             texturecolor.a = 1;
-            normal = Texel(volume_nor, coords).rgb * 2 - 1;
-            AO = Texel(volume_ao, coords).r;
+            vec4 tmp = Texel(volume_nor, coords);
+            normal = tmp.rgb * 2 - 1;
+            AO = tmp.a;
             lambertFactor = max(0, dot(normal, lightDir));
             if(lambertFactor > 0){
                 coords += normal.xyz/size + 5*lightDir.xyz/size; //shadow bias

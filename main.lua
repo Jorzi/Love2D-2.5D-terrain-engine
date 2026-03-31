@@ -60,8 +60,6 @@ function love.load()
 	spriteShadowShader = love.graphics.newShader("sprite_object_shadow.glsl")
 	spriteShadowShader:send("cameraRot", camera.rot)
 	
-	dynamicSpriteShader = love.graphics.newShader("dynamic_sprite_object.glsl")
-	dynamicSpriteShader:send("cameraRot", camera.rot)
 	dynamicSpriteShadowShader = love.graphics.newShader("dynamic_sprite_object_shadow.glsl")
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	minimapShader = love.graphics.newShader("minimap.glsl")
@@ -70,99 +68,7 @@ function love.load()
 	loadGui()
 end
 
-function loadSpriteStack(filename, image)
-	local contents = love.filesystem.read(filename)
-	local data = json.decode(contents)
-	--io.write(dump(data.frames["0001.png"]))
-	local i = 1
-	vertices = {}
-	while data.frames[string.format("%04d", i)] do
-		--io.write(dump(data.frames[string.format("%04d.png", i)]))
-		--io.write(string.format("%d\n", i))
-		local sprite = data.frames[string.format("%04d", i)]
-		-- centered vertex coordinates
-		x1 = sprite.spriteSourceSize.x - sprite.sourceSize.w / 2
-		x2 = (sprite.spriteSourceSize.x + sprite.spriteSourceSize.w) - sprite.sourceSize.w / 2
-		y1 = sprite.spriteSourceSize.y - sprite.sourceSize.h / 2
-		y2 = (sprite.spriteSourceSize.y + sprite.spriteSourceSize.h) - sprite.sourceSize.h / 2
-		-- normalized texture coordinates 
-		u1 = sprite.frame.x / image:getWidth()
-		u2 = (sprite.frame.x + sprite.frame.w) / image:getWidth()
-		v1 = sprite.frame.y / image:getHeight()
-		v2 = (sprite.frame.y + sprite.frame.h) / image:getHeight()
-		--first triangle
-		table.insert(vertices, {x1, y1, u1, v1, i/256,1,1})
-		table.insert(vertices, {x2, y1, u2, v1, i/256,1,1})
-		table.insert(vertices, {x1, y2, u1, v2, i/256,1,1})
-		--second triangle
-		table.insert(vertices, {x2, y1, u2, v1, i/256,1,1})
-		table.insert(vertices, {x2, y2, u2, v2, i/256,1,1})
-		table.insert(vertices, {x1, y2, u1, v2, i/256,1,1})
-		i = i + 1
-	end
-	local spritestack = love.graphics.newMesh(vertices, "triangles", "static")
-	spritestack:setTexture(image)
-	return spritestack
-end
-function prerenderSpritestack(mesh, normalmap, Nangles, Nmoisture, canvas, normalCanvas)
-	
-	local maxRadiusSquared = 0
-	local maxHeight = 0
-	for i = 1, mesh:getVertexCount( ) do
-		local x, y, u, v, r = mesh:getVertex(i)
-		local rSquared = x*x + y*y
-		maxRadiusSquared = math.max(maxRadiusSquared, rSquared)
-		maxHeight = math.max(maxHeight, r)
-	end
-	local maxRadius = math.sqrt(maxRadiusSquared)
-	if not canvas or not normalCanvas then
-		canvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
-		normalCanvas = love.graphics.newCanvas( 2* maxRadius * Nangles, (maxHeight*256 + maxRadius) * Nmoisture, {format="rgba8"})
-		canvas:setWrap("repeat")
-		normalCanvas:setWrap("repeat")
-	end
-	local SpriteObject = {}
-    SpriteObject.normalmap = normalCanvas
-	SpriteObject.Nangles = Nangles
-	SpriteObject.Nmoisture = Nmoisture
-	-- centered vertex coordinates (origin at bottom center of bounding cylinder)
-	local x1 = -maxRadius
-	local x2 = maxRadius
-	local y1 = -maxHeight*256-maxRadius/2
-	local y2 = maxRadius/2
-	-- normalized texture coordinates 
-	local u1 = 0
-	local u2 = 1/Nangles
-	local v1 = 0
-	local v2 = 1/Nmoisture
-	local vertices = {}
-	table.insert(vertices, {x1, y1, u1, v1, 1,1,1})
-	table.insert(vertices, {x2, y1, u2, v1, 1,1,1})
-	table.insert(vertices, {x2, y2, u2, v2, 1,1,1})
-	table.insert(vertices, {x1, y2, u1, v2, 1,1,1})
-	SpriteObject.sprite = love.graphics.newMesh(vertices)
-	SpriteObject.sprite:setTexture(canvas)
 
-	love.graphics.setShader(spritestackToSpriteShader)
-	spritestackToSpriteShader:send("normalMap", normalmap)
-	spritestackToSpriteShader:send("cameraRot", camera.rot)
-	love.graphics.setColor(1,1,1,1)
-	love.graphics.setCanvas(canvas)
-	love.graphics.clear()
-	love.graphics.setCanvas(normalCanvas)
-	love.graphics.clear()
-	for i = 1, Nangles do
-		for j = 1, Nmoisture do
-			love.graphics.setCanvas({canvas, normalCanvas})
-			spritestackToSpriteShader:send("objectRot", (i-1) * math.pi*2 / Nangles)
-			spritestackToSpriteShader:send("humidity", math.pow(j/Nmoisture, 2))
-			local x, y = maxRadius + 2* maxRadius * (i-1), j*(maxHeight*256 + maxRadius) - maxRadius/2
-			love.graphics.draw(mesh, x, y) --draw sprite
-		end
-	end
-	love.graphics.setCanvas()
-	return canvas, normalCanvas, SpriteObject
-end
 
 -- debug function for displaying contents of anything as text
 function dump(o)
@@ -249,9 +155,6 @@ function initializeBuffers()
 	decalShader:send("normalmap", normalMap)
 	decalShader:send("geomBuffer", geomBuffer)
 	decalShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
-	dynamicSpriteShader:send("shadowmap", shadowMap)
-	dynamicSpriteShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
-	dynamicSpriteShader:send("geomBuffer", geomBuffer)
 	globalSpritebatchShader:send("shadowmap", shadowMap)
 	globalSpritebatchShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
 	globalSpritebatchShader:send("geomBuffer", geomBuffer)
@@ -471,7 +374,6 @@ function love.wheelmoved(x, y)
 	spritestackShader:send("cameraRot", camera.rot)
 	spritestackShadowShader:send("cameraRot", camera.rot)
 	spriteShadowShader:send("cameraRot", camera.rot)
-	dynamicSpriteShader:send("cameraRot", camera.rot)
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	--globalSpritebatchShader:send("cameraRot", camera.rot)
 	decalShader:send("rot", camera.rot)

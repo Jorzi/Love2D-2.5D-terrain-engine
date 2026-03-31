@@ -25,6 +25,7 @@ function initAssetList()
 	assetList.corn1 = loadAssetSpritestack("textures/corn1.json", "textures/corn1.png", "textures/corn1_nor.png", 16, 1)
 	assetList.birch1 = loadAssetSpritestack("textures/birch1.json", "textures/birch1.png", "textures/birch1_nor.png", 8, 8)
 	assetList.small_hut1 = loadAssetSpritestack("textures/small_hut1.json", "textures/small_hut1.png", "textures/small_hut1_nor.png", 8, 1)
+    assetList.dude1 = loadAssetVoxel("asset source files/dude1.vox", 8, 1)
     generateDynamicSpritesheet()
     redrawAssets()
 end
@@ -44,7 +45,66 @@ function loadAssetSpritestack(filePath, texturePath, normalmapPath, Nangles, Nmo
     return asset
 end
 
+function loadSpriteStack(filename, image)
+	local contents = love.filesystem.read(filename)
+	local data = json.decode(contents)
+	--io.write(dump(data.frames["0001.png"]))
+	local i = 1
+	vertices = {}
+	while data.frames[string.format("%04d", i)] do
+		--io.write(dump(data.frames[string.format("%04d.png", i)]))
+		--io.write(string.format("%d\n", i))
+		local sprite = data.frames[string.format("%04d", i)]
+		-- centered vertex coordinates
+		x1 = sprite.spriteSourceSize.x - sprite.sourceSize.w / 2
+		x2 = (sprite.spriteSourceSize.x + sprite.spriteSourceSize.w) - sprite.sourceSize.w / 2
+		y1 = sprite.spriteSourceSize.y - sprite.sourceSize.h / 2
+		y2 = (sprite.spriteSourceSize.y + sprite.spriteSourceSize.h) - sprite.sourceSize.h / 2
+		-- normalized texture coordinates 
+		u1 = sprite.frame.x / image:getWidth()
+		u2 = (sprite.frame.x + sprite.frame.w) / image:getWidth()
+		v1 = sprite.frame.y / image:getHeight()
+		v2 = (sprite.frame.y + sprite.frame.h) / image:getHeight()
+		--first triangle
+		table.insert(vertices, {x1, y1, u1, v1, i/256,1,1})
+		table.insert(vertices, {x2, y1, u2, v1, i/256,1,1})
+		table.insert(vertices, {x1, y2, u1, v2, i/256,1,1})
+		--second triangle
+		table.insert(vertices, {x2, y1, u2, v1, i/256,1,1})
+		table.insert(vertices, {x2, y2, u2, v2, i/256,1,1})
+		table.insert(vertices, {x1, y2, u1, v2, i/256,1,1})
+		i = i + 1
+	end
+	local spritestack = love.graphics.newMesh(vertices, "triangles", "static")
+	spritestack:setTexture(image)
+	return spritestack
+end
 
+function loadAssetVoxel(filePath, Nangles, scale)
+    local asset = {}
+    asset.type = "voxel"
+    asset.Nangles = Nangles
+    asset.Nmoisture = 1 --no moisture implementation yet
+    asset.texture = textureFromVox(filePath)
+    asset.normalmap = generateVoxelNormalsAndAO(asset.texture)
+    asset.texture:setWrap("clamp")
+	asset.texture:setFilter("nearest")
+    asset.normalmap:setWrap("clamp")
+	asset.normalmap:setFilter("nearest")
+    asset.drawable = generateMeshCube(asset.texture:getWidth()*scale, asset.texture:getHeight()*scale, asset.texture:getDepth()*scale)
+    return asset
+end
+
+function textureFromVox(path)
+    local Vox_model   = require("asset source files/voxel_render/vox_model")
+	local Vox_texture3D = require("asset source files/voxel_render/vox_texture3d")
+    local file = love.filesystem.newFile(path)
+    file:open("r")
+		local model = Vox_model.new(file:read())
+	file:close()
+	local texture = Vox_texture3D.new(model)
+    return texture
+end
 
 --asset = {width, height, type, drawable}
 function generateDynamicSpritesheet()
@@ -70,7 +130,7 @@ function generateDynamicSpritesheet()
 end
 
 function getDimensions(drawable, type, angle)
-    if type == "spritestack" then
+    if type == "spritestack" or type == "voxel" then
         local maxRadiusSquared = 0
         local maxHeight = 0
         for i = 1, drawable:getVertexCount( ) do
@@ -81,10 +141,6 @@ function getDimensions(drawable, type, angle)
         end
         local maxRadius = math.sqrt(maxRadiusSquared)
         return 2*maxRadius, maxHeight*256 + maxRadius, maxRadius, maxHeight*256 + maxRadius/2
-    elseif type == "voxel" then
-        local radius = math.sqrt(drawable.width*drawable.width + drawable.height*drawable.height)
-        local zHeight = drawable.depth
-        return 2*radius, zHeight + radius, radius, zHeight + radius/2
     end
 end
 
@@ -161,4 +217,96 @@ function getAssetSprite(name, angle, moisture)
     local Nsprites = asset.Nangles * asset.Nmoisture
     --io.write(string.format("%f, %f\n", angleIndex, moistureIndex))
     return asset[index], asset[index + Nsprites], asset[index + 2*Nsprites]
+end
+
+
+function generateVoxelNormalsAndAO(volume)
+	local filter = volume:getFilter()
+	volume:setWrap("clampzero")
+	volume:setFilter("linear")
+	local normalMap = love.graphics.newCanvas(volume:getWidth(), volume:getHeight(), {format="rgba8"})
+	local volumeNormalsAO = love.graphics.newShader("asset source files/voxel_render/volume_normals_ao.glsl")
+	volumeNormalsAO:send("volume", volume)
+	local numberOfLayers = volume:getDepth()
+	volumeNormalsAO:send("size", {volume:getWidth(), volume:getHeight(), numberOfLayers})
+	local vertices = {
+		{0,0,0,0},
+		{volume:getWidth(),0,1,0},
+		{volume:getWidth(),volume:getHeight(),1,1},
+		{0,volume:getHeight(),0,1},
+	}
+	local mesh = love.graphics.newMesh(vertices)
+	local images = {}
+	for i=1,numberOfLayers do
+		volumeNormalsAO:send("zcoord", (i-0.5)/numberOfLayers)
+		love.graphics.setCanvas(normalMap)
+		love.graphics.clear( )
+		love.graphics.setShader(volumeNormalsAO)
+		love.graphics.draw(mesh)
+		love.graphics.setCanvas()
+		love.graphics.setShader()
+		data = normalMap:newImageData()
+		images[i] = data
+	end
+	volume:setFilter(filter)
+	return love.graphics.newVolumeImage(images)
+end
+
+function generateMeshCube(width, depth, height)
+	local vertexformat = {
+        {"VertexPosition", "float", 3}, -- The x,y position of each vertex.
+        {"VertexTexCoord", "float", 3} -- The u,v texture coordinates of each vertex.
+    }
+    local vertices = {
+		{
+			-width/2, -depth/2, 0, -- position of the vertex
+			0, 0, 0 -- texture coordinate at the vertex position
+		},
+		{
+			width/2, -depth/2, 0, -- position of the vertex
+			1, 0, 0 -- texture coordinate at the vertex position
+		},
+		{
+			width/2, depth/2, 0, -- position of the vertex
+			1, 1, 0 -- texture coordinate at the vertex position
+		},
+		{
+			-width/2, depth/2, 0, -- position of the vertex
+			0, 1, 0 -- texture coordinate at the vertex position
+		},
+        {
+			-width/2, -depth/2, height, -- position of the vertex
+			0, 0, 1 -- texture coordinate at the vertex position
+		},
+		{
+			width/2, -depth/2, height, -- position of the vertex
+			1, 0, 1 -- texture coordinate at the vertex position
+		},
+		{
+			width/2, depth/2, height, -- position of the vertex
+			1, 1, 1 -- texture coordinate at the vertex position
+		},
+		{
+			-width/2, depth/2, height, -- position of the vertex
+			0, 1, 1 -- texture coordinate at the vertex position
+		},
+	}
+    local vertexMap = {
+        3, 2, 1, --bottom
+        1, 4, 3, --bottom
+        5, 6, 7, --top
+        7, 8, 5, --top
+        1, 2, 6,
+        6, 5, 1,
+        4, 1, 5,
+        5, 8, 4,
+        3, 4, 8,
+        8, 7, 3,
+        2, 3, 7,
+        7, 6, 2
+    }
+
+    cube = love.graphics.newMesh(vertexformat, vertices, "triangles", "static")
+    cube:setVertexMap(vertexMap)
+	return cube
 end

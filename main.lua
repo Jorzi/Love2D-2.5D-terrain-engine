@@ -36,8 +36,6 @@ function love.load()
 	terrainGeomShader = love.graphics.newShader("terrain_geombuffer.glsl")
 	terrainShader = love.graphics.newShader("terrain.glsl")
 	loadTextures()
-	spritestackToSpriteShader = love.graphics.newShader("spritestack_to_sprite.glsl")
-	spritestackToSpriteShader:send("cameraRot", camera.rot)
 	initAssetList()
 	terrainGeomShader:send("rot", camera.rot)
 	terrainGeomShader:send("zscale", mapGridScale/2)
@@ -97,11 +95,6 @@ function loadTextures()
 	road_tiles = love.graphics.newImage("textures/road_tiles.png")
 	road_tiles:setWrap("clamp")
 	road_tiles:setFilter("nearest")
-	assets = {}
-
-	peasant_worker_col = love.graphics.newImage("textures/peasant_worker_col.png")
-	peasant_worker_nor = love.graphics.newImage("textures/peasant_worker_nor.png")
-	assets.peasant_worker = newUnit("textures/peasant_worker_col.json", peasant_worker_col, peasant_worker_nor, "peasant_worker")
 end
 
 
@@ -176,8 +169,8 @@ end
 
 function place_building(x, y, rot)
 	local height = heightData:getPixel(x, y)
-	addBuilding("small_hut1", x, y, rot, false)
-	setHeight_rect(x-3, y-2, x+3, y+2, height)
+	addBuilding("hut2", x, y, rot, false)
+	setHeight_rect(x-3, y-3, x+3, y+3, height)
 end
 
 
@@ -258,7 +251,6 @@ function generateRandomTrees(n)
 		else
 			addPlant("bush1", x, y, rot)
 		end
-		--addUnit(peasant_worker, x, y, rot)
 	end
 end
 
@@ -359,7 +351,7 @@ function love.mousereleased(x, y, button, isTouch)
 	elseif editState.activeTool == "place_unit" then
 		if button == 1 then
 			local x2, y2 = mouseWorldPosition(x, y)
-			addUnit(assets.peasant_worker, x2, y2, editState.placementRot)
+			addUnit("dude1", x2, y2, editState.placementRot)
 		end
 	end
 	
@@ -462,6 +454,22 @@ function love.draw()
 			screenShadowBuffer:add(sprite, x-xRot, 2*y-yRot, -angle, 1, 2)
 			spriteCount = spriteCount + 1
 		end
+		if(getUnit(j, i)) then
+			local object = getUnit(j, i)
+			local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, 1)
+			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
+			y_screen = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
+			local _, _, marginX, marginY = sprite:getViewport();
+			marginX = math.max(marginX, 2*marginY) --account for shadow rotation
+			if x < 0-marginX or x > love.graphics.getWidth() + marginX or y_screen < 0-marginY or y_screen > love.graphics.getHeight() + marginY then return end
+			screenObjectBuffer:setColor(object.x/mapSizeX, object.y/mapSizeY, object.height/255, 1)
+			screenObjectBuffer:add(sprite, x-anchorX, y_screen-anchorY)
+			--shadow
+			local angle = camera.rot + math.rad(45)
+			local xRot, yRot = 2*anchorY * math.sin(angle) + anchorX * math.cos(angle), 2*anchorY * math.cos(angle) - anchorX * math.sin(angle)
+			screenShadowBuffer:add(sprite, x-xRot, 2*y-yRot, -angle, 1, 2)
+			spriteCount = spriteCount + 1
+		end
 	end
 	local sector = math.floor(math.fmod(camera.rot, math.pi*2)/(math.pi*2) * 16)
 	local loopConditions = {}
@@ -542,22 +550,6 @@ function love.draw()
 	love.graphics.setColor(1,1,1,1)
 
 	--draw objects
-	local function drawSprite(j, i)
-		if(getUnit(j, i)) then
-			local unit = getUnit(j, i)
-			love.graphics.setColor(1,1,1,1)
-			love.graphics.setShader(spriteShader)
-			spriteShader:send("objectRot", unit.rot)
-			local height = getTerrainHeight(unit.x, unit.y)
-			spriteShader:send("objectWorldPos", {unit.x/mapSizeX, unit.y/mapSizeY, height/256})
-			spriteShader:send("normalMap", unit.unit.normalmap)
-			local x, y = spriteVertexTransform(unit.x, unit.y, camera.rot, camera.x, camera.y)
-			y = y - height * mapGridScale / 2 --displace current sprite according to its height value
-			local margin = 100
-			if x < 0-margin or x > love.graphics.getWidth() + margin or y < 0-margin or y > love.graphics.getHeight() + margin then return end
-			drawUnit(unit.unit, x, y, unit.rot, camera.rot) --draw sprite
-		end
-	end
 
 	love.graphics.setShader(globalSpritebatchShader)
 	love.graphics.setColor(1,1,1,1)
@@ -578,7 +570,7 @@ function love.draw()
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	--love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
+	love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)
@@ -598,13 +590,6 @@ function love.draw()
 	--love.graphics.line(x, y, x, y - z * mapGridScale / 2)
 	local activeQuad = love.graphics.newMesh(vertices, "fan")
 	love.graphics.draw(activeQuad)
-	local x, y = love.mouse.getPosition()
-	love.graphics.setShader(spriteShader)
-	spriteShader:send("objectRot", 0)
-	local worldX, worldY = mouseWorldPosition(x, y)
-	spriteShader:send("objectWorldPos", {worldX/mapSizeX, worldY/mapSizeY, getTerrainHeight(worldX, worldY)/256})
-	spriteShader:send("normalMap", assets.peasant_worker.normalmap)
-	drawUnit(assets.peasant_worker, x, y, 0, camera.rot)
 	love.graphics.setShader()
 	luis.draw()
 	love.graphics.setColor(1,1,1,1)
@@ -739,8 +724,7 @@ function loadGame(name)
 			end
 		end
 		if v.unit then
-			local unit = assets[v.unit.name]
-			addUnit(unit, v.unit.x, v.unit.y, v.unit.rot)
+			addUnit(v.unit.name, v.unit.x, v.unit.y, v.unit.rot)
 		end
 	end
 end

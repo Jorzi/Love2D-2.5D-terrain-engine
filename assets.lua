@@ -5,11 +5,16 @@ function initAssetList()
     assetList.bufferResY = 2048
     assetList.diffuseBuffer = love.graphics.newCanvas(assetList.bufferResX, assetList.bufferResY)
     assetList.lightBuffer = love.graphics.newCanvas(assetList.bufferResX, assetList.bufferResY)
-    voxelShader = love.graphics.newShader("asset source files/voxel_render/voxel.glsl")
+
     globalSpritebatchShader = love.graphics.newShader("global_spritebatch_object.glsl")
     globalSpritebatchShader:send("normalMap", assetList.lightBuffer)
-    spritestackToSpriteShadowShader = love.graphics.newShader("spritestack_to_sprite_shadow.glsl")
     globalSpritebatchShadowShader = love.graphics.newShader("global_spritebatch_shadow.glsl")
+
+    spritestackToSpriteShader = love.graphics.newShader("spritestack_to_sprite.glsl")
+    spritestackToSpriteShadowShader = love.graphics.newShader("spritestack_to_sprite_shadow.glsl")
+    voxelToSpriteShader = love.graphics.newShader("voxel_to_sprite.glsl")
+    voxelToSpriteShadowShader = love.graphics.newShader("voxel_to_sprite_shadow.glsl")
+    
     --globalSpritebatchShader:send("cameraRot", camera.rot)
     screenObjectBuffer = love.graphics.newSpriteBatch(assetList.diffuseBuffer, 4000, "stream")
     screenShadowBuffer = love.graphics.newSpriteBatch(assetList.lightBuffer, 4000, "stream")
@@ -25,7 +30,8 @@ function initAssetList()
 	assetList.corn1 = loadAssetSpritestack("textures/corn1.json", "textures/corn1.png", "textures/corn1_nor.png", 16, 1)
 	assetList.birch1 = loadAssetSpritestack("textures/birch1.json", "textures/birch1.png", "textures/birch1_nor.png", 8, 8)
 	assetList.small_hut1 = loadAssetSpritestack("textures/small_hut1.json", "textures/small_hut1.png", "textures/small_hut1_nor.png", 8, 1)
-    assetList.dude1 = loadAssetVoxel("asset source files/dude1.vox", 8, 1)
+    assetList.dude1 = loadAssetVoxel("asset source files/dude1.vox", 16, 1)
+    assetList.hut2 = loadAssetVoxel("asset source files/hut2.vox", 8, 1)
     generateDynamicSpritesheet()
     redrawAssets()
 end
@@ -130,7 +136,7 @@ function generateDynamicSpritesheet()
 end
 
 function getDimensions(drawable, type, angle)
-    if type == "spritestack" or type == "voxel" then
+    if type == "spritestack" then
         local maxRadiusSquared = 0
         local maxHeight = 0
         for i = 1, drawable:getVertexCount( ) do
@@ -141,6 +147,18 @@ function getDimensions(drawable, type, angle)
         end
         local maxRadius = math.sqrt(maxRadiusSquared)
         return 2*maxRadius, maxHeight*256 + maxRadius, maxRadius, maxHeight*256 + maxRadius/2
+    end
+    if type == "voxel" then
+        local maxRadiusSquared = 0
+        local maxHeight = 0
+        for i = 1, drawable:getVertexCount( ) do
+            local x, y, z = drawable:getVertex(i)
+            local rSquared = x*x + y*y
+            maxRadiusSquared = math.max(maxRadiusSquared, rSquared)
+            maxHeight = math.max(maxHeight, z)
+        end
+        local maxRadius = math.sqrt(maxRadiusSquared)
+        return 2*maxRadius, maxHeight + maxRadius, maxRadius, maxHeight + maxRadius/2
     end
 end
 
@@ -185,14 +203,30 @@ function drawAsset(asset)
                 end
             end
         elseif asset.type == "voxel" then
-            love.graphics.setShader(voxelShader)
-            love.graphics.setMeshCullMode("front")
-            love.graphics.setBlendMode("alpha")
+            voxelToSpriteShader:send("volume_nor", asset.normalmap)
+            voxelToSpriteShader:send("volume", asset.texture)
+            voxelToSpriteShader:send("cameraRot", camera.rot)
+            voxelToSpriteShader:send("size", {asset.texture:getWidth(), asset.texture:getHeight(), asset.texture:getDepth()})
+            voxelToSpriteShadowShader:send("volume", asset.texture)
+            voxelToSpriteShadowShader:send("size", {asset.texture:getWidth(), asset.texture:getHeight(), asset.texture:getDepth()})
             for i = 1, asset.Nangles do
-                local x, y = asset[i]:getViewport()
-                x = x + asset[i + asset.Nangles] --X anchor
-                y = y + asset[i + 2*asset.Nangles] --Y anchor
-                love.graphics.draw(asset.drawable, x, y, (i-1) * math.pi*2 / asset.Nangles)
+                for j = 1, asset.Nmoisture do
+                    local index = i + (j-1)*asset.Nangles
+                    local Nsprites = asset.Nangles * asset.Nmoisture
+                    local x, y, width, height = asset[index]:getViewport()
+                    local objectRot = (i-1) * math.pi*2 / asset.Nangles
+                    clearQuad(x, y, width, height)
+                    love.graphics.setCanvas({assetList.diffuseBuffer, assetList.lightBuffer})
+                    love.graphics.setShader(voxelToSpriteShader)
+                    love.graphics.setBlendMode("alpha")
+                    love.graphics.setMeshCullMode("front")
+                    x = x + asset[index + Nsprites] --X anchor
+                    y = y + asset[index + 2*Nsprites] --Y anchor
+                    love.graphics.draw(asset.drawable, x, y, objectRot) --draw sprite
+                    love.graphics.setShader(voxelToSpriteShadowShader)
+                    love.graphics.setBlendMode("add")
+                    love.graphics.draw(asset.drawable, x, y, objectRot + math.rad(45)) --draw sprite
+                end
             end
         end
         love.graphics.setCanvas()
@@ -242,9 +276,11 @@ function generateVoxelNormalsAndAO(volume)
 		love.graphics.setCanvas(normalMap)
 		love.graphics.clear( )
 		love.graphics.setShader(volumeNormalsAO)
+        love.graphics.setBlendMode("replace", "premultiplied")
 		love.graphics.draw(mesh)
 		love.graphics.setCanvas()
 		love.graphics.setShader()
+        love.graphics.setBlendMode("alpha")
 		data = normalMap:newImageData()
 		images[i] = data
 	end

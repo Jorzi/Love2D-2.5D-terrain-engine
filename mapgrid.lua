@@ -48,9 +48,9 @@ function addDecal(x, y, mesh, decalType, rot)
     mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
 end
 
-function addUnit(unit, x, y, rot)
+function addUnit(name, x, y, rot)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].unit = {unit = unit, x=x, y=y, rot=rot}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].unit = {name = name, objectType = "unit", height = getTerrainHeight(x, y), x=x, y=y, rot=rot}
 end
 
 function addPlant(name, x, y, rot, blockerList)

@@ -97,9 +97,11 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
             }
         }
     }
-    AO = clamp(pow(AO, 0.9)*2, 0, 1);
-    texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.2 + AO*0.8);
+    AO = clamp(pow(AO, 0.5)*1.9, 0.1, 1);
+    texturecolor.rgb = texturecolor.rgb * (lambertFactor*0.7 + AO*0.3);
     //return mix(texturecolor, VaryingTexCoord, 0.2);
+    //return vec4(normal * 0.5 + 0.5, texturecolor.a);
+    //return vec4(AO, AO, AO, texturecolor.a);
     return texturecolor;
 }
 #endif

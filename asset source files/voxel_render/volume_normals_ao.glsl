@@ -51,10 +51,12 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
         }
     }
     normal = normalize(normal); //first normal is only used for AO calculation
-    coords += normal*occlusionSum/19/size;
+    vec3 normal2 = normal;
+    //coords += normal*occlusionSum/25/size;
+    //coords += 0.2*normal/size;
 
     float illumination = 0;
-    float limit = 3;
+    float limit = 4;
     //create ray directions according to a cube shell
     float N = 2*limit + 1;
     float numberOfRays = 6*N*N -12*N + 8;
@@ -70,7 +72,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     //left and right faces
     for(float x = -limit; x <= limit; x += 1){
         for(float y = -limit; y <= limit; y += 2*limit){
-            for(float z = -limit+1; z <= limit-1; z += 1){
+            for(float z = -floor(limit/2)+1; z <= limit-1; z += 1){
                 vec3 dir = normalize(vec3(x, y, z));
                 illumination += raycast(coords, dir);
             }
@@ -79,7 +81,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     //front and back faces
     for(float x = -limit; x <= limit; x += 2*limit){
         for(float y = -limit+1; y <= limit-1; y += 1){
-            for(float z = -limit+1; z <= limit-1; z += 1){
+            for(float z = -floor(limit/2)+1; z <= limit-1; z += 1){
                 vec3 dir = normalize(vec3(x, y, z));
                 illumination += raycast(coords, dir);
             }

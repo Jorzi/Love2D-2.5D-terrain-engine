@@ -107,8 +107,8 @@ void effect()
             }
         }
     }
-    AO = clamp(pow(AO, 0.9)*2, 0.1, 1);
-    //texturecolor.rgb = texturecolor.rgb * AO;
+    AO = clamp(pow(AO, 0.5)*1.9, 0.1, 1);
+    texturecolor.rgb = texturecolor.rgb * AO;
 
     love_Canvases[0] = texturecolor;
     //love_Canvases[0] = vec4(tmp.rgb, texturecolor.a);

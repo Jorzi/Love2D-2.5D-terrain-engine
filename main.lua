@@ -5,7 +5,7 @@ mapGridScale = 10 --screen pixels per map texel
 grid_density = 0.5 -- vertices per pixel for screen grid
 mouseState = {startX = 0, startY = 0, GUIClick = false}
 editState = {toolStrength = 1, activeTool = "none", placementRot = 0, radius = 5}
-chunkSize = 64;
+--chunkSize = 64;
 
 love.filesystem.load("fluid.lua")()
 love.filesystem.load("terrain.lua")()

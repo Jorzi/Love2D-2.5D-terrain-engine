@@ -21,13 +21,13 @@ function love.load()
 	volume = love.graphics.newVolumeImage(images, settings) ]]
 	Vox_model   = require("vox_model")
 	Vox_texture3D = require("vox_texture3d")
-	volume = newFromVox("dude1.vox")
+	volume = newFromVox("hut2.vox")
 	volume:setFilter("nearest")
 	volume:setWrap("clamp")
 	volume_nor = generateVoxelNormalsAndAO(volume)
 	volume_nor:setFilter("nearest")
 	volume_nor:setWrap("clamp")
-	cubeScale = 5
+	cubeScale = 3
 	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, volume:getDepth()*cubeScale)
     rot = 0;
 	voxelShader:send("volume", volume)

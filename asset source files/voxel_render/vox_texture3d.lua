@@ -21,7 +21,9 @@ function vox_texture3d.new(model)
   for i = 1, model.sizeZ do
     love.graphics.setCanvas(canvas)
     love.graphics.clear()
-    love.graphics.points(points[i-1])
+    if points[i-1] then
+      love.graphics.points(points[i-1])
+    end
     love.graphics.setCanvas()
     images[i] = canvas:newImageData()
   end

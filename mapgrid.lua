@@ -65,7 +65,7 @@ end
 
 function addBuilding(name, x, y, rot, walkable)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "building", height = getTerrainHeight(x, y), x=x, y=y, rot=rot, humidity = 1}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].object = {name = name, objectType = "building", height = getTerrainHeight(x, y) - 1, x=x, y=y, rot=rot, humidity = 1}
     if walkable then
         mapGrid[math.floor(x)+math.floor(y)*mapSizeX].blocker = {blockerType = "build", originX = math.floor(x), originY = math.floor(y)}
     else

@@ -151,6 +151,7 @@ function initializeBuffers()
 	globalSpritebatchShader:send("shadowmap", shadowMap)
 	globalSpritebatchShader:send("screenSize", {love.graphics.getWidth(), love.graphics.getHeight()})
 	globalSpritebatchShader:send("geomBuffer", geomBuffer)
+	globalSpritebatchShader:send("mapSize", {mapSizeX, mapSizeY})
 	gridSizeX = love.graphics.getWidth()
 	gridSizeY = love.graphics.getHeight() + 256 * mapGridScale / 2
 	screenGrid = generateScreenGridMesh(math.floor(gridSizeX * grid_density), math.floor(gridSizeY * grid_density))
@@ -446,7 +447,7 @@ function love.draw()
 			local _, _, marginX, marginY = sprite:getViewport();
 			marginX = math.max(marginX, 2*marginY) --account for shadow rotation
 			if x < 0-marginX or x > love.graphics.getWidth() + marginX or y_screen < 0-marginY or y_screen > love.graphics.getHeight() + marginY then return end
-			screenObjectBuffer:setColor(object.x/mapSizeX, object.y/mapSizeY, object.height/255, 1)
+			screenObjectBuffer:setColor((object.x-math.floor(camera.x)+128)/255, (object.y-math.floor(camera.y)+128)/255, object.height/255, 1)
 			screenObjectBuffer:add(sprite, x-anchorX, y_screen-anchorY)
 			--shadow
 			local angle = camera.rot + math.rad(45)
@@ -462,7 +463,7 @@ function love.draw()
 			local _, _, marginX, marginY = sprite:getViewport();
 			marginX = math.max(marginX, 2*marginY) --account for shadow rotation
 			if x < 0-marginX or x > love.graphics.getWidth() + marginX or y_screen < 0-marginY or y_screen > love.graphics.getHeight() + marginY then return end
-			screenObjectBuffer:setColor(object.x/mapSizeX, object.y/mapSizeY, object.height/255, 1)
+			screenObjectBuffer:setColor((object.x-math.floor(camera.x)+128)/255, (object.y-math.floor(camera.y)+128)/255, object.height/255, 1)
 			screenObjectBuffer:add(sprite, x-anchorX, y_screen-anchorY)
 			--shadow
 			local angle = camera.rot + math.rad(45)
@@ -552,6 +553,7 @@ function love.draw()
 	--draw objects
 
 	love.graphics.setShader(globalSpritebatchShader)
+	globalSpritebatchShader:send("cameraPos", {math.floor(camera.x), math.floor(camera.y)})
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.setBlendMode("alpha", "premultiplied")
 	love.graphics.draw(screenObjectBuffer)
@@ -570,7 +572,7 @@ function love.draw()
 	love.graphics.setColor(1,1,1,1)
 	love.graphics.circle( "fill", camera.x/mapSizeX*minimapSize, camera.y/mapSizeY*minimapSize, 2 )
 	love.graphics.draw(text_out)
-	love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
+	--love.graphics.draw(assetList.lightBuffer, 0, 256, 0, 0.5)
 	--love.graphics.print(love.report or "Please wait...", 0, 60)
 	--highlight active tile
 	local z1 = getTerrainHeight(cursorX-0.5, cursorY-0.5)

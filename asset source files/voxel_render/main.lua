@@ -21,7 +21,7 @@ function love.load()
 	volume = love.graphics.newVolumeImage(images, settings) ]]
 	Vox_model   = require("vox_model")
 	Vox_texture3D = require("vox_texture3d")
-	volume = newFromVox("hut2.vox")
+	volume = newFromVox("village_hub_merge.vox")
 	volume:setFilter("nearest")
 	volume:setWrap("clamp")
 	volume_nor = generateVoxelNormalsAndAO(volume)

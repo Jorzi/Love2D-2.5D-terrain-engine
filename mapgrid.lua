@@ -50,7 +50,7 @@ end
 
 function addUnit(name, x, y, rot)
     x, y = checkTile(x, y)
-	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].unit = {name = name, objectType = "unit", height = getTerrainHeight(x, y), x=x, y=y, rot=rot}
+	mapGrid[math.floor(x)+math.floor(y)*mapSizeX].unit = newUnit(name, x, y, rot)
 end
 
 function addPlant(name, x, y, rot, blockerList)
@@ -90,6 +90,9 @@ function updatePlants (dt)
                     v.blocker = nil
                 end
             end
+        end
+        if v.unit then
+            updateUnit(v.unit)
         end
     end
 end

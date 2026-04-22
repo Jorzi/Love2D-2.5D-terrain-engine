@@ -352,7 +352,7 @@ function love.mousereleased(x, y, button, isTouch)
 	elseif editState.activeTool == "place_unit" then
 		if button == 1 then
 			local x2, y2 = mouseWorldPosition(x, y)
-			addUnit("dude1", x2, y2, editState.placementRot)
+			addUnit("randomWalker", x2, y2, editState.placementRot)
 		end
 	end
 	
@@ -457,7 +457,7 @@ function love.draw()
 		end
 		if(getUnit(j, i)) then
 			local object = getUnit(j, i)
-			local sprite, anchorX, anchorY = getAssetSprite(object.name, object.rot, 1)
+			local sprite, anchorX, anchorY = getAssetSprite(object.asset, object.rot, 1)
 			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 			y_screen = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local _, _, marginX, marginY = sprite:getViewport();

@@ -1,13 +1,15 @@
 unitTypes = {
-	randomWalker = {asset = "dude1", speed = 0.1}
+	randomWalker = {asset = "walkingDude1", speed = 0.1, animLength = 15}
 }
 
 
 function newUnit(name, x, y, rot)
     local unit = {}
 	unit.state = "idle"
+	unit.animCycle = 0
     unit.asset = unitTypes[name].asset
 	unit.speed = unitTypes[name].speed
+	unit.animLength = unitTypes[name].animLength
 	unit.name = name
 	unit.x, unit.y, unit.rot = x, y, rot
 	unit.height = getTerrainHeight(x, y)
@@ -26,9 +28,11 @@ function updateUnit(unit)
 			unit.targetX = math.min(math.max(0, unit.targetX), mapSizeX-1)
     		unit.targetY = math.min(math.max(0, unit.targetY), mapSizeY-1)
 			unit.state = "moving"
+			unit.animCycle = 0
 		end
 	end
 	if unit.state == "moving" then
+		_, unit.animCycle = math.modf(unit.animCycle + 1/unit.animLength)
 		local dx, dy = unit.targetX - unit.x, unit.targetY - unit.y
 		local unitSpeed = unit.speed --tiles per game tick
 		local dist = math.sqrt(dx*dx+dy*dy)
@@ -39,7 +43,10 @@ function updateUnit(unit)
 		else
 			unit.x, unit.y = unit.x + dx, unit.y + dy
 		end
-		if unit.x == unit.targetX and unit.y == unit.targetY then unit.state = "idle" end
+		if unit.x == unit.targetX and unit.y == unit.targetY then 
+			unit.state = "idle" 
+			unit.animCycle = 0
+		end
 		unit.rot = rot
 		unit.height = getTerrainHeight(unit.x, unit.y)
 		local tileX, tileY = checkTile(math.floor(unit.x), math.floor(unit.y))

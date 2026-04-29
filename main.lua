@@ -457,7 +457,7 @@ function love.draw()
 		end
 		if(getUnit(j, i)) then
 			local object = getUnit(j, i)
-			local sprite, anchorX, anchorY = getAssetSprite(object.asset, object.rot, 1)
+			local sprite, anchorX, anchorY = getAssetSprite(object.asset, object.rot, 1, object.state, object.animCycle)
 			local x, y = spriteVertexTransform(object.x, object.y, camera.rot, camera.x, camera.y)
 			y_screen = y - object.height * mapGridScale / 2 --displace current sprite according to its height value
 			local _, _, marginX, marginY = sprite:getViewport();

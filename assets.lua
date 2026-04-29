@@ -32,6 +32,11 @@ function initAssetList()
 	assetList.small_hut1 = loadAssetSpritestack("textures/small_hut1.json", "textures/small_hut1.png", "textures/small_hut1_nor.png", 8, 1)
     assetList.dude1 = loadAssetVoxel("asset source files/dude1.vox", 16, 1)
     assetList.hut2 = loadAssetVoxel("asset source files/hut2.vox", 8, 1)
+    assetList.walkingDude1 = loadAnimatedAssetVoxel({
+        idle={"asset source files/dude1.vox"}, 
+        moving={"asset source files/dude1_walk-frame1.vox", "asset source files/dude1_walk-frame2.vox"}
+    }, 16, 1)
+    io.write(dump(assetList.walkingDude1))
     generateDynamicSpritesheet()
     redrawAssets()
 end
@@ -100,6 +105,20 @@ function loadAssetVoxel(filePath, Nangles, scale)
     asset.drawable = generateMeshCube(asset.texture:getWidth()*scale, asset.texture:getHeight()*scale, asset.texture:getDepth()*scale)
     return asset
 end
+--animFileList example: {idle={"frame1.vox", "frame2.vox", "frame3.vox"}, walk={"frame1.vox", "frame2.vox", "frame3.vox"}}
+function loadAnimatedAssetVoxel(animFileList, Nangles, scale)
+    local asset = {}
+    asset.type = "voxelAnim"
+    asset.states = {}
+    for k, v in pairs(animFileList) do
+        table.insert(asset.states, k)
+        asset[k] = {}
+        for i = 1, #v do
+            asset[k][i] = loadAssetVoxel(v[i], Nangles, scale)
+        end
+    end
+    return asset
+end
 
 function textureFromVox(path)
     local Vox_model   = require("asset source files/voxel_render/vox_model")
@@ -113,23 +132,34 @@ function textureFromVox(path)
 end
 
 --asset = {width, height, type, drawable}
+function allocateSpriteArea(asset, bp)
+    for i = 1, asset.Nangles do
+        for j = 1, asset.Nmoisture do
+            local angle = 2 * math.pi / asset.Nangles * (i-1)
+            local width, height, anchorX, anchorY = getDimensions(asset.drawable, asset.type, angle)
+            local rect = bp:insert(width, height)
+            --put all data as numerical indices directly in the list entry for faster drawing of quads
+            local index = i + (j-1)*asset.Nangles
+            local Nsprites = asset.Nangles * asset.Nmoisture
+            asset[index] = love.graphics.newQuad(rect.x, rect.y, width, height, assetList.diffuseBuffer)
+            asset[index + Nsprites] = anchorX
+            asset[index + 2 * Nsprites] = anchorY
+        end
+    end
+end
 function generateDynamicSpritesheet()
 	local binpack_new = require('binpack')
 	local bp = binpack_new(assetList.bufferResX, assetList.bufferResY)
 	for k, v in pairs(assetList) do
         if type(v) == "table" and v.type then
-            for i = 1, v.Nangles do
-                for j = 1, v.Nmoisture do
-                    local angle = 2 * math.pi / v.Nangles * (i-1)
-                    local width, height, anchorX, anchorY = getDimensions(v.drawable, v.type, angle)
-                    local rect = bp:insert(width, height)
-                    --put all data as numerical indices directly in the list entry for faster drawing of quads
-                    local index = i + (j-1)*v.Nangles
-                    local Nsprites = v.Nangles * v.Nmoisture
-                    v[index] = love.graphics.newQuad(rect.x, rect.y, width, height, assetList.diffuseBuffer)
-                    v[index + Nsprites] = anchorX
-                    v[index + 2 * Nsprites] = anchorY
+            if v.type == "voxelAnim" then
+                for _, state in pairs(v.states) do
+                    for _, frame in pairs(v[state]) do
+                        allocateSpriteArea(frame, bp)
+                    end
                 end
+            else
+                allocateSpriteArea(v, bp)
             end
         end
 	end
@@ -163,7 +193,7 @@ function getDimensions(drawable, type, angle)
 end
 
 function drawAsset(asset)
-    function clearQuad(x, y, width, height)
+    local function clearQuad(x, y, width, height)
         love.graphics.setShader()
         love.graphics.setBlendMode("replace")
         love.graphics.setCanvas(assetList.diffuseBuffer)
@@ -176,6 +206,33 @@ function drawAsset(asset)
         love.graphics.setColor(0,0,0,1)
         love.graphics.rectangle("fill", x, y, width, height)
         love.graphics.setColor(1,1,1,1)
+    end
+    local function drawVoxel(asset)
+        voxelToSpriteShader:send("volume_nor", asset.normalmap)
+            voxelToSpriteShader:send("volume", asset.texture)
+            voxelToSpriteShader:send("cameraRot", camera.rot)
+            voxelToSpriteShader:send("size", {asset.texture:getWidth(), asset.texture:getHeight(), asset.texture:getDepth()})
+            voxelToSpriteShadowShader:send("volume", asset.texture)
+            voxelToSpriteShadowShader:send("size", {asset.texture:getWidth(), asset.texture:getHeight(), asset.texture:getDepth()})
+            for i = 1, asset.Nangles do
+                for j = 1, asset.Nmoisture do
+                    local index = i + (j-1)*asset.Nangles
+                    local Nsprites = asset.Nangles * asset.Nmoisture
+                    local x, y, width, height = asset[index]:getViewport()
+                    local objectRot = (i-1) * math.pi*2 / asset.Nangles
+                    clearQuad(x, y, width, height)
+                    love.graphics.setCanvas({assetList.diffuseBuffer, assetList.lightBuffer})
+                    love.graphics.setShader(voxelToSpriteShader)
+                    love.graphics.setBlendMode("alpha")
+                    love.graphics.setMeshCullMode("front")
+                    x = x + asset[index + Nsprites] --X anchor
+                    y = y + asset[index + 2*Nsprites] --Y anchor
+                    love.graphics.draw(asset.drawable, x, y, objectRot) --draw sprite
+                    love.graphics.setShader(voxelToSpriteShadowShader)
+                    love.graphics.setBlendMode("add")
+                    love.graphics.draw(asset.drawable, x, y, objectRot + math.rad(45)) --draw sprite
+                end
+            end
     end
     if type(asset) == "table" and asset.type then
         if asset.type == "spritestack" then
@@ -203,29 +260,11 @@ function drawAsset(asset)
                 end
             end
         elseif asset.type == "voxel" then
-            voxelToSpriteShader:send("volume_nor", asset.normalmap)
-            voxelToSpriteShader:send("volume", asset.texture)
-            voxelToSpriteShader:send("cameraRot", camera.rot)
-            voxelToSpriteShader:send("size", {asset.texture:getWidth(), asset.texture:getHeight(), asset.texture:getDepth()})
-            voxelToSpriteShadowShader:send("volume", asset.texture)
-            voxelToSpriteShadowShader:send("size", {asset.texture:getWidth(), asset.texture:getHeight(), asset.texture:getDepth()})
-            for i = 1, asset.Nangles do
-                for j = 1, asset.Nmoisture do
-                    local index = i + (j-1)*asset.Nangles
-                    local Nsprites = asset.Nangles * asset.Nmoisture
-                    local x, y, width, height = asset[index]:getViewport()
-                    local objectRot = (i-1) * math.pi*2 / asset.Nangles
-                    clearQuad(x, y, width, height)
-                    love.graphics.setCanvas({assetList.diffuseBuffer, assetList.lightBuffer})
-                    love.graphics.setShader(voxelToSpriteShader)
-                    love.graphics.setBlendMode("alpha")
-                    love.graphics.setMeshCullMode("front")
-                    x = x + asset[index + Nsprites] --X anchor
-                    y = y + asset[index + 2*Nsprites] --Y anchor
-                    love.graphics.draw(asset.drawable, x, y, objectRot) --draw sprite
-                    love.graphics.setShader(voxelToSpriteShadowShader)
-                    love.graphics.setBlendMode("add")
-                    love.graphics.draw(asset.drawable, x, y, objectRot + math.rad(45)) --draw sprite
+            drawVoxel(asset)
+        elseif asset.type == "voxelAnim" then
+            for _, state in pairs(asset.states) do
+                for _, frame in pairs(asset[state]) do
+                    drawVoxel(frame)
                 end
             end
         end
@@ -241,9 +280,14 @@ function redrawAssets()
 	end
 end
 
+--animCycle is a number between 0 and 1 that determines how far the animation has progressed
 --returns Quad, anchorX, anchorY
-function getAssetSprite(name, angle, moisture)
+function getAssetSprite(name, angle, moisture, state, animCycle)
     local asset = assetList[name]
+    if asset.type == "voxelAnim" then
+        local frame = math.floor(animCycle * #asset[state]) + 1
+        asset = asset[state][frame]
+    end
     _, angle = math.modf(angle/(2*math.pi))
     local angleIndex = math.floor(angle * asset.Nangles)
     local moistureIndex = math.max(math.ceil(moisture * asset.Nmoisture) - 1, 0)

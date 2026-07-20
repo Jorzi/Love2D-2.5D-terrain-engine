@@ -45,8 +45,12 @@ function updateFluid(fluid)
     love.graphics.setBlendMode('replace', 'premultiplied')
     love.graphics.setColor(1,1,1,1) 
     for i = 1, 2 do
-        --3 fluid sim steps, 1 blur
+        --4 fluid sim steps, 1 moisture step, 1 blur
         love.graphics.setShader(fluid.fluidsimShader)
+        love.graphics.setCanvas(fluid.tmpBuffer)
+        love.graphics.draw(fluid.fluidLayer)
+        love.graphics.setCanvas(fluid.fluidLayer)
+        love.graphics.draw(fluid.tmpBuffer)
         love.graphics.setCanvas(fluid.tmpBuffer)
         love.graphics.draw(fluid.fluidLayer)
         love.graphics.setCanvas(fluid.fluidLayer)
@@ -83,7 +87,7 @@ end
 
 function addFluid(fluid, x, y )
     love.graphics.setCanvas(fluid.fluidLayer)
-    love.graphics.setColor(1, 0, 0)
+    love.graphics.setColor(2/255, 0, 0)
     love.graphics.setBlendMode("add")
     love.graphics.circle("fill", x, y, 10, 16)
     love.graphics.setBlendMode("alpha") 

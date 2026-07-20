@@ -59,6 +59,7 @@ vec4 position(mat4 transform_projection, vec4 vertex_position)
 #ifdef PIXEL
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
+  float inaccessible = 0;
 	
 	vec4 pos = Texel(tex, texture_coords); //object shadows in alpha channel
   pos.xy += cameraPos;
@@ -67,6 +68,9 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 	//precomputed normal map
 	vec3 nor = 2 * Texel(normalmap, pos.xy).rgb - 1;
 	nor = normalize(nor);
+  if(nor.z < 0.555){
+    inaccessible = 1;
+  }
 
   vec4 water = Texel(waterDepth, pos.xy);
   water.r = max(0, water.r);
@@ -84,6 +88,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 	  waterNor = cross(tanX, tanY);
     waterNor = normalize(waterNor);
     nor = mix(nor, waterNor, waterMask);
+    inaccessible = waterMask > 0.3 ? 1 : 0;
   }
 	//nor = mix(nor, waterNor, waterMask);
 	
@@ -117,6 +122,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 	texturecolor = mix(texturecolor, waterColor, waterMask);
 	texturecolor.rgb = texturecolor.rgb * lightFactor;
 	
-    return texturecolor * color;
+  //return mix(texturecolor * color, vec4(1,0,0,1), 0.5*inaccessible);
+  return texturecolor * color;
 }
 #endif

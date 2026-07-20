@@ -1,8 +1,6 @@
 -- mapGrid is a sparse array containing all units, buildings, plants and decals, as well as data on movement and building blockers
 function initializeMapGrid()
     mapGrid = {}
-    mapGrid.minimapLayerData = love.image.newImageData(mapSizeX, mapSizeY)
-    mapGrid.minimapLayer = love.graphics.newImage(mapGrid.minimapLayerData)
 end
 
 function getDecal(x, y)
@@ -127,25 +125,3 @@ function drawMinimapObjects(minimapSize)
     love.graphics.setColor(1,1,1,1)
 end
 
---[[ function drawMinimapObjects(minimapSize)
-    local function drawObjects(x, y, r, g, b, a)
-        v = mapGrid[x+y*mapSizeX]
-        if v then
-            if v.decal or v.object or v.unit then
-                if v.object and v.object.objectType == "plant" then
-                    if v.object.name == "corn1" then
-                        return 0.8, 0.65, 0.15, 1
-                    end
-                    return 0.15, 0.2, 0.05, 1
-                end
-                return 1, 1, 1, 1
-            end
-        end
-        return 0, 0, 0, 0
-    end
-    mapGrid.minimapLayerData:mapPixel(drawObjects)
-    mapGrid.minimapLayer:replacePixels(mapGrid.minimapLayerData)
-    love.graphics.setColor(1,1,1,1)
-    love.graphics.draw(mapGrid.minimapLayer, 0, 0, 0, minimapSize/mapSizeX)
-end
- ]]

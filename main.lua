@@ -24,7 +24,6 @@ function love.load()
 
 	generateHeightmap()
 	generateMasks()
-	initializeMapGrid()
 	gridSizeX = love.graphics.getWidth()
 	gridSizeY = love.graphics.getHeight() + 256 * mapGridScale / 2
 	gameTime = 0
@@ -62,6 +61,7 @@ function love.load()
 	dynamicSpriteShadowShader:send("cameraRot", camera.rot)
 	minimapShader = love.graphics.newShader("minimap.glsl")
 	initializeBuffers()
+	initializeMapGrid()
 	generateRandomTrees(10000)
 	loadGui()
 end
@@ -295,6 +295,8 @@ function love.update(dt)
 			addRoad(cursorX, cursorY)
 		elseif editState.activeTool == "delete_brush" then
 			delete_brush(cursorX, cursorY, editState.radius)
+		elseif editState.activeTool == "add_fluid" then	
+			addFluid(fluidSim, cursorX, cursorY)
 		end
 	end	
 	text_out:set(string.format("Rot: %.3f rad, FPS = %d, cursor = %d, %d, r/f: raise/lower water, t/g: increase/decrease tool strength", camera.rot, love.timer.getFPS( ), cursorX, cursorY))
@@ -411,6 +413,9 @@ function love.keypressed(key, scancode, isrepeat)
 	end
 	if key == "8" then
 		editState.activeTool = 'place_unit'
+	end
+	if key == "9" then
+		editState.activeTool = 'add_fluid'
 	end
 end
 

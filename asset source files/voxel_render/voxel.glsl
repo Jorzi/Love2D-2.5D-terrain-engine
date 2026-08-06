@@ -92,8 +92,7 @@ vec4 raycast(inout vec3 coords, vec3 dir, float maxLod){
 vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
 
-    float maxLod = floor(log2(min3(size)));
-    maxLod = 8;
+    float maxLod = max(floor(log2(min3(size)))-3, 0);
     vec3 coords = clamp(VaryingTexCoord.xyz, vec3(0), 1-(0.1/size));
     vec3 normal = vec3(0,0,1);
     float AO = 1;

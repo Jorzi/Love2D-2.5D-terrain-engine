@@ -9,6 +9,34 @@ function generateHeightmap()
 	love.graphics.setCanvas()
 	love.graphics.setColor(1,1,1,1)
 	heightData = heightMap:newImageData()
+	gradientData = love.image.newImageData( mapSizeX, mapSizeY, "r8")
+	--gradientData = {}
+	calculateGradients()
+end
+
+function calculateGradients()
+	local function gradient(x,y, r,g,b,a)
+		local h1 = heightData:getPixel(x, y)
+		local h2 = heightData:getPixel(x+1, y)
+		local h3 = heightData:getPixel(x, y+1)
+		r = math.sqrt((h2-h1)*(h2-h1) + (h3-h1)*(h3-h1))
+		return r,g,b,a
+	end
+	gradientData:mapPixel(gradient, 0, 0, mapSizeX-1, mapSizeY-1)
+	--[[ for x = 0, mapSizeX-2 do
+		for y = 0, mapSizeY-2 do
+			gradientData[x+(mapSizeX-1)*y] = gradient(x,y)
+		end
+	end ]]
+end
+
+function getGradient(x, y)
+	--x = clamp(math.floor(x+0.5), 0, mapSizeX-2)
+	--y = clamp(math.floor(y+0.5), 0, mapSizeY-2)
+	--return gradientData[x+(mapSizeX-1)*y]
+	--x = clamp(math.floor(x+0.5), 0, mapSizeX-1)
+	--y = clamp(math.floor(y+0.5), 0, mapSizeY-1)
+	return gradientData:getPixel(x+0.5, y+0.5)
 end
 
 function generateMasks()

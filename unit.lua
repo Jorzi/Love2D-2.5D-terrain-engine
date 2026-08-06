@@ -7,8 +7,10 @@ local function checkAccessibility(pos)
 	local x, y = pos.x, pos.y
 	if x >= 0 and x < mapSizeX and y >= 0 and y < mapSizeY then
 		if not getBlocker(x, y) or getBlocker(x, y) == "build" then
-			if fluidSim.fluidData:getPixel(x, y) < 0.1/255 then
-				return true
+			if getGradient(x, y) < 2/255 then
+				if fluidSim.fluidData:getPixel(x, y) < 0.1/255 then
+					return true
+				end
 			end
 		end
 	end 

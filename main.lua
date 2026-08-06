@@ -164,6 +164,7 @@ function updateBuffers()
 	-- buffers operate directly on global canvases to avoid reassigning them on the gpu
 	calculateTerrainNormals(bufferScale)
 	calculateTerrainShadows()
+	calculateGradients()
 end
 
 

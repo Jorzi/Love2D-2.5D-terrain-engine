@@ -49,6 +49,7 @@ vec4 raycast(inout vec3 coords, vec3 dir, float maxLod){
     ivec3 currentRes;
     vec3 pixelCoords;
     vec3 intCoords;
+    vec3 intCoords2;
     float xNext;
     float yNext;
     float zNext;
@@ -59,23 +60,21 @@ vec4 raycast(inout vec3 coords, vec3 dir, float maxLod){
         texturecolor = textureLod(volume, coords, lod);
         N++;
         if(texturecolor.a == 0){
-            if(textureLod(volume, coords, lod+1).a == 0 && lod < maxLod){
+            if(lod < maxLod && textureLod(volume, coords, lod+1).a == 0){
                 lod++;
             }
             //find next intersection planes in x, y, z
             currentRes = textureSize(volume, lod);
             pixelCoords = coords * currentRes;
             intCoords = floor(pixelCoords);
-            xNext = dir.x > 0 ? intCoords.x+1 - pixelCoords.x : intCoords.x - pixelCoords.x;
-            yNext = dir.y > 0 ? intCoords.y+1 - pixelCoords.y : intCoords.y - pixelCoords.y;
-            zNext = dir.z > 0 ? intCoords.z+1 - pixelCoords.x : intCoords.x - pixelCoords.x;
-            //float maxDist = length(size);
-            //r1 = dir.x != 0 ? xNext/dir.x : maxDist; //new glsl standard specifies that division by 0 is inf, but old one allows different values depending on the vendor implementation
-            //r2 = dir.y != 0 ? yNext/dir.y : maxDist; //this calculation is ~10% slower, but guarantees predictable results on old hardware
-            //r3 = dir.z != 0 ? zNext/dir.z : maxDist;
-            r1 = xNext/dir.x; 
-            r2 = yNext/dir.y;
-            r3 = zNext/dir.z;
+            intCoords2 = ceil(pixelCoords);
+            xNext = dir.x > 0 ? intCoords.x+1 - pixelCoords.x : intCoords2.x-1 - pixelCoords.x;
+            yNext = dir.y > 0 ? intCoords.y+1 - pixelCoords.y : intCoords2.y-1 - pixelCoords.y;
+            zNext = dir.z > 0 ? intCoords.z+1 - pixelCoords.z : intCoords2.z-1 - pixelCoords.z;
+            float maxDist = length(vec3(size)); // largest possible distance for ray tracing is the diagonal of the domain
+            r1 = dir.x != 0 ? xNext/dir.x : maxDist; //new glsl standard specifies that division by 0 is inf, but old one allows different values depending on the vendor implementation
+            r2 = dir.y != 0 ? yNext/dir.y : maxDist; //this calculation is ~10% slower, but guarantees predictable results on old hardware
+            r3 = dir.z != 0 ? zNext/dir.z : maxDist;
             rNext = min(min(r1, r2), r3); //choose closest plane
             coords += dir*(rNext/currentRes + 0.01/size); //move to the next intersection
         }else if(lod==0) {
@@ -103,11 +102,12 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     if (texturecolor.a == 0) discard;
     vec4 tmp = Texel(volume_nor, coords);
     normal = tmp.rgb * 2 - 1;
+    normal = normalize(normal);
     AO = tmp.a;
     lambertFactor = max(0, dot(normal, lightDir));
     if(lambertFactor > 0){
-        coords += normal.xyz/size + 5*lightDir.xyz/size; //shadow bias
-        float shadowRay = raycast(coords, lightDir, maxLod).a == 0 ? 1 : 0;
+        coords += normal.xyz/size + 2*lightDir/size; //shadow bias
+        float shadowRay = raycast(coords, lightDir, maxLod).a < 0.1 ? 1 : 0;
         lambertFactor = lambertFactor * shadowRay;
     }
     AO = clamp(pow(AO, 0.5)*1.9, 0.1, 1);

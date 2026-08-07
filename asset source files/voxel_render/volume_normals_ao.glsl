@@ -34,7 +34,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
 {
 	
 	vec3 coords = vec3(texture_coords, zcoord);
-    if(Texel(volume, coords).a == 0)discard; //don't calculate anything for empty voxels
+    //if(Texel(volume, coords).a == 0)discard; //don't calculate anything for empty voxels
 
     vec3 normal = vec3(0,0,0);
     float occlusionSum = 0;

@@ -56,7 +56,7 @@ vec4 effect(vec4 color, Image tex, vec2 texture_coords, vec2 screen_coords)
     //coords += 0.2*normal/size;
 
     float illumination = 0;
-    float limit = 4;
+    float limit = 5;
     //create ray directions according to a cube shell
     float N = 2*limit + 1;
     float numberOfRays = 6*N*N -12*N + 8;

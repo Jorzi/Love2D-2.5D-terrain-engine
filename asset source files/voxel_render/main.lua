@@ -22,13 +22,15 @@ function love.load()
 	Vox_model   = require("vox_model")
 	Vox_texture3D = require("vox_texture3d")
 	--volume = newFromVox("max_size_tree.vox")
-	volume = newFromVox("large_house.vox")
+	--volume = newFromVox("large_house.vox")
+	--volume = newFromVox("corn.vox")
+	volume = newFromVox("hut2.vox")
 	volume:setFilter("nearest")
 	volume:setWrap("clamp")
 	volume_nor = generateVoxelNormalsAndAO(volume)
 	volume_nor:setFilter("linear")
 	volume_nor:setWrap("clamp")
-	cubeScale = 4
+	cubeScale = 2
 	cube = generateMeshCube(volume:getWidth()*cubeScale, volume:getHeight()*cubeScale, volume:getDepth()*cubeScale)
     rot = 0;
 	voxelShader:send("volume", volume)
@@ -251,7 +253,7 @@ function love.draw()
     love.graphics.setShader(voxelShader)
 	love.graphics.setMeshCullMode("front")
 	for i = 1,1 do
-    	love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2 + 200, rot+i)
+    	love.graphics.draw(cube, love.graphics.getWidth()/2, love.graphics.getHeight()/2 + volume:getDepth()/2*cubeScale, rot+i)
 	end
     love.graphics.setShader()
 	text_out:set(string.format("viewAngle: %.3f rad, FPS = %d space: toggle turntable", viewAngle, love.timer.getFPS( )))

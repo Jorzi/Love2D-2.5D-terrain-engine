@@ -76,7 +76,7 @@ vec4 raycast(inout vec3 coords, vec3 dir, float maxLod){
             r2 = dir.y != 0 ? yNext/dir.y : maxDist; //this calculation is ~10% slower, but guarantees predictable results on old hardware
             r3 = dir.z != 0 ? zNext/dir.z : maxDist;
             rNext = min(min(r1, r2), r3); //choose closest plane
-            coords += dir*(rNext/currentRes + 0.01/size); //move to the next intersection
+            coords += dir*(rNext/currentRes + 0.001/size); //move to the next intersection
         }else if(lod==0) {
             texturecolor.a = 1;
             return texturecolor;
